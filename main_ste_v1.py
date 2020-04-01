@@ -10,25 +10,75 @@ import pymf3
 from scipy.optimize import minimize
 from scipy.optimize import curve_fit
 import math
+import scipy
 #------------------------------------------------------------------------------
 
-def smooth_data(data,win):
-    return np.array([np.mean(data[int(np.max([j-win,0])):int(np.min([j+win,data.size]))]) for j in  range(data.size)])
 
-#------------------------------------------------------------------------------
+res=1600
+dim_s=100
+
 
 #all spectrums
+i_file= open('original_MG_solution.dat', "r")
+temp = i_file.readlines()
+temp=[i.strip('\n') for i in temp]
+data_o=np.array([(row.split('\t')) for row in temp], dtype=np.float32)
 
+f_vec=data_o[:,0]
+data_o=data_o[:,1]
+
+plt.plot(f_vec,data_o)
+
+I=np.trapz(data_o,f_vec)
+data_o=data_o/I
+
+
+#normalize the area to one
+#
 i_file= open('1500ppb_all_spectrum.dat', "r")
 temp = i_file.readlines()
 temp=[i.strip('\n') for i in temp]
-data=np.array([(row.split('\t')) for row in temp], dtype=np.float32)
+data1500=np.array([(row.split('\t')) for row in temp], dtype=np.float32)
+f_1500=data1500[:,0]
+data1500=data1500[:,1:101]
+I=[np.trapz(data1500[:,i],f_1500) for i in range(100)]
+data1500=data1500/I
+data1500=data1500.reshape([1600,10,10])
 
-f_vec=data[:,0]
-data=data[:,1:101]
 
-# tensorize the data
-data=data.reshape([1600,10,10])
+i_file= open('15ppb_all_spectrum.dat', "r")
+temp = i_file.readlines()
+temp=[i.strip('\n') for i in temp]
+data15=np.array([(row.split('\t')) for row in temp], dtype=np.float32)
+f_15=data15[:,0]
+data15=data15[:,1:101]
+I=[np.trapz(data15[:,i],f_15) for i in range(100)]
+data15=data15/I
+data15=data15.reshape([1600,10,10])
+
+
+i_file= open('1.5ppb_all_spectrum.dat', "r")
+temp = i_file.readlines()
+temp=[i.strip('\n') for i in temp]
+data1p5=np.array([(row.split('\t')) for row in temp], dtype=np.float32)
+f_1p5=data1p5[:,0]
+data1p5=data1p5[:,1:101]
+I=[np.trapz(data1p5[:,i],f_1p5) for i in range(100)]
+data1p5=data1p5/I
+data1p5=data1p5.reshape([1600,10,10])
+
+init_plot=1
+
+if init_plot:
+    plt.plot(f_vec,data_o,label='clean data')
+    plt.plot(f_vec,np.mean(data1500,axis=(1,2))+0.0003,label='1500ppb')
+    plt.plot(f_vec,np.mean(data15,axis=(1,2))+0.0006,label='15ppb')
+    plt.plot(f_vec,np.mean(data1p5,axis=(1,2))+0.0009,label='1.500ppb')
+    plt.legend()
+    
+#data1500[0,:]-data1p5[0,:] 
+#data1p5[0,:] 
+
 
 plot_on=1
 # plot some mean data
@@ -53,6 +103,253 @@ data_min_s=np.array([np.min(data[f,:,:])  for f in range(1600)])
 #   plt.plot(f_vec,data_min_s)
 
 # smooth the min
+
+
+# check NMF 
+
+def  quick_NMF(data,k=3):
+
+    model = NMF(n_components=k, init='random', random_state=0)
+    W = model.fit_transform(data)
+    H = model.components_
+    
+    plot_NMF=1
+    
+    if plot_NMF:
+        plt.figure("Model")
+        plt.plot(W)
+        plt.show()
+        plt.figure("Component")
+        plt.plot(np.transpose(H))
+        plt.show()
+
+    return W,H
+
+
+quick_NMF(data1500.reshape(res,dim_s),3)
+
+quick_NMF(data15.reshape(res,dim_s),2)
+
+quick_NMF(data1p5.reshape(res,dim_s),3)
+
+
+# remove the bias 
+
+INF=10**4
+
+def one_side_MSE (y_pred,y_true):        
+    if  y_pred-y_true>0:
+        loss=INF*(y_pred-y_true)**2
+    else:
+        loss=(y_pred-y_true)**2            
+    return(loss)
+
+
+def obj_one_side_MSE(beta, X, Y):
+    p=np.poly1d(beta)
+    error = sum([one_side_MSE(p(X[i]), Y[i]) for i in range(X.size)])/X.size
+    return(error)
+
+def quick_remove_bias(data):    
+    # find the minimum over the spacial dimension
+    min_spec=np.min(data,axis=(1,2))    
+        
+    mean = np.mean(min_spec)
+    min_spec -= np.mean(min_spec)
+    autocorr_f = np.correlate(min_spec, min_spec, mode='full')
+    mid=int(np.where(autocorr_f==max(autocorr_f ))[0])
+    temp = autocorr_f[mid:]/autocorr_f[mid]    
+    # plt.plot(temp)
+   
+    min_spec=np.min(data,axis=(1,2))          
+    beta_init=np.polyfit(f_vec,min_spec,3)
+    poly_min=np.poly1d(np.polyfit(f_vec,min_spec,3))(f_vec)
+    beta_init[3]=beta_init[3]+min(min_spec-poly_min)
+
+    result = minimize(obj_one_side_MSE, beta_init, args=(f_vec,min_spec), method='Nelder-Mead', tol=1e-9)   
+
+    beta_hat = result.x                 
+    beta_hat -beta_init
+    poly_min_hat=np.poly1d(beta_hat)(f_vec)
+    
+    poly_min_hat=poly_min_hat+min(min_spec-poly_min_hat)
+    
+    plt.plot(poly_min_hat)
+    plt.plot(min_spec)
+    
+    return poly_min_hat
+    
+
+def smooth_data(data,win):
+    return np.array([np.mean(data[int(np.max([j-win,0])):int(np.min([j+win,data.size]))]) for j in  range(data.size)])
+
+#------------------------------------------------------------------------------
+
+bias1500=quick_remove_bias(data1500)
+
+plt.figure('Data 1500ppb')
+plt.plot(f_vec,np.mean(data1500,axis=(1,2)),label='spatial mean')
+plt.plot(f_vec,np.min(data1500,axis=(1,2)),label='spatial minimum')
+plt.plot(f_vec,bias1500,label='bias spatial minimum')
+plt.legend()
+
+
+bias15=quick_remove_bias(data15)
+plt.figure('Data 15ppb')
+plt.plot(f_vec,np.mean(data15,axis=(1,2)),label='spatial mean')
+plt.plot(f_vec,np.min(data15,axis=(1,2)),label='spatial minimum')
+plt.plot(f_vec,bias15,label='bias spatial minimum')
+plt.legend()
+
+
+bias1p5=quick_remove_bias(data1p5)
+plt.figure('Data 1.5ppb')
+plt.plot(f_vec,np.mean(data1p5,axis=(1,2)),label='spatial mean')
+plt.plot(f_vec,np.min(data1p5,axis=(1,2)),label='spatial minimum')
+plt.plot(f_vec,bias1p5,label='bias spatial minimum')
+plt.legend()
+
+#------------------------------------------------------------------------------
+#interpolate the original spectrum with lorenzian
+
+
+beta_init=np.polyfit(f_vec,data_o,3)
+poly_min=np.poly1d(np.polyfit(f_vec,min_spec,3))(f_vec)
+beta_init[3]=beta_init[3]+min(min_spec-poly_min)
+
+result = minimize(obj_one_side_MSE, beta_init, args=(f_vec,data_o), method='Nelder-Mead', tol=1e-9)   
+
+beta_hat = result.x                 
+beta_hat -beta_init
+poly_min_hat=np.poly1d(beta_hat)(f_vec)
+    
+poly_min_hat=poly_min_hat+min(data_o-poly_min_hat)
+    
+data_o_nb=data_o-poly_min_hat
+
+plt.plot(f_vec,data_o)
+plt.plot(f_vec,poly_min_hat)
+plt.plot(f_vec,data_o_nb)
+
+
+mean = np.mean(data_o_nb)
+data_o_nb-= np.mean(data_o_nb)
+autocorr_f = np.correlate(data_o_nb, data_o_nb, mode='full')
+mid=int(np.where(autocorr_f==max(autocorr_f ))[0])
+temp = autocorr_f[mid:]/autocorr_f[mid]    
+win_t=np.where(temp>0.9)[0][-1]
+
+from lmfit.models import LorentzianModel, QuadraticModel
+
+mod = LorentzianModel()
+
+
+
+
+data_temp=data_o-poly_min_hat
+data_temp_mean=smooth_data(data_o_nb,win_t)
+
+#plt.plot(data_temp)
+#peaks, properties = sci.find_peaks(data_temp_mean,prominence=3,width=2)
+peaks, properties = sci.find_peaks(data_temp_mean,width=win_t)
+
+#idx=peaks[np.flip(np.argsort(data_temp[peaks]))]
+
+idx=np.flip(np.argsort(data_temp[peaks],kind='quicksort'))
+#idx=peaks[idx[0:7]]
+idx=peaks[idx[0:15]]
+
+plt.plot(f_vec[peaks],data_temp[peaks],'*')
+plt.plot(f_vec[idx], data_temp[idx],'.')
+plt.plot(f_vec, data_temp)
+
+
+rough_peak_positions = f_vec[idx]
+
+def add_peak(prefix, center, amplitude=0.1, sigma=0.1):
+    peak = LorentzianModel(prefix=prefix)
+    pars = peak.make_params()
+    pars[prefix + 'center'].set(center)
+    pars[prefix + 'amplitude'].set(amplitude)
+    pars[prefix + 'sigma'].set(sigma, min=0)
+    return peak, pars
+
+model = QuadraticModel(prefix='bkg_')
+params = model.make_params(a=0, b=0, c=0)
+
+for i, cen in enumerate(rough_peak_positions):
+    peak, pars = add_peak('lz%d_' % (i+1), cen)
+    model = model + peak
+    params.update(pars)
+    
+init = model.eval(params, x=f_vec)
+result = model.fit(data_temp, params, x=f_vec)
+comps = result.eval_components()
+
+plt.plot(f_vec, data_temp, label='data')
+plt.plot(f_vec, result.best_fit, label='best fit')
+for name, comp in comps.items():
+    plt.plot(f_vec, comp, '--', label=name)
+
+#
+
+plt.legend(loc='upper right')
+plt.show()
+
+##############################################################################
+############################################################################################################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+
+
+
+
+
+
+
+
+
+
+
+    # window is when we go below 0.9
+    win_t=np.where(temp>0.9)[0][-1]
+     
+    min_mean=smooth_data(min_spec,win_t)
+    
+    peaks, properties = sci.find_peaks(min_mean,width=2*win_t)
+        
+    #peaks = sci.find_peaks_cwt(min_mean, np.arange(1,10))
+    
+    plt.plot(min_mean)
+    plt.plot(peaks,min_mean[peaks],'o')
+    
+    # find when we are under 0.5 correlation   
+    win_t=np.where(temp>0.5)[0][-1]
+
+ #------------------------------------------------------------------------------
+ 
+ 
+    pp=np.correlate(min_spec-np.mean(min_spec),min_spec-np.mean(min_spec), mode='same')/(np.var(min_spec))
+%    pp=pp[int(min_spec.size/2)]
+     
+    
+    plt.plot(pp)
+     
+     
+    min_corr=np.correlate(min_spec)
+    # set the window to the point at which the correlation fall under 0.5
+    avg_corr= diag(min_corr,k)
+    M=[np.mean(diag(min_corr,i)) for i in  range(min_spec.size)]
+    
+    peaks, properties = sci.find_peaks(data_min_s,prominence=5,width=5)
+
+
+    return bias_spect
+
+data=data15
+
+data=data15[:,].reshape(res,dim_s)
 
 
 win=10
@@ -81,6 +378,7 @@ for p in range(peaks.shape[0]):
     
     win = range(l_pos,r_pos)
     win_len=r_pos-l_pos
+    
     
     #l_max=l_pos-1000*win_len
     #r_max=r_pos+1000*win_len
@@ -193,6 +491,7 @@ if plot_NMF:
     plt.plot(np.transpose(H))
     plt.show()
     
+
 
 #------------------------------------------------------------------------------
 # Cauchy fitting of the peaks
@@ -312,7 +611,6 @@ for name, comp in comps.items():
     plt.plot(f_vec, comp, '--', label=name)
 plt.legend(loc='upper right')
 plt.show()
-
 
 pos=np.where(peaks==idx)
 
