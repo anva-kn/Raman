@@ -14,6 +14,63 @@ from math import pi
 from scipy.optimize import leastsq
 from scipy.optimize import curve_fit
 from sklearn.metrics import mean_squared_error
+from scipy.optimize import minimize
+
+
+res=1600
+dim_s=100
+
+
+#all spectrums
+i_file= open('original_MG_solution.dat', "r")
+temp = i_file.readlines()
+temp=[i.strip('\n') for i in temp]
+data_o=np.array([(row.split('\t')) for row in temp], dtype=np.float32)
+
+f_vec=data_o[:,0]
+data_o=data_o[:,1]
+
+#plt.plot(f_vec,data_o)
+
+I=np.trapz(data_o,f_vec)
+data_o=data_o/I
+
+
+#normalize the area to one
+#
+i_file= open('1500ppb_all_spectrum.dat', "r")
+temp = i_file.readlines()
+temp=[i.strip('\n') for i in temp]
+data1500=np.array([(row.split('\t')) for row in temp], dtype=np.float32)
+f_1500=data1500[:,0]
+data1500=data1500[:,1:101]
+I=[np.trapz(data1500[:,i],f_1500) for i in range(100)]
+data1500=data1500/I
+data1500=data1500.reshape([1600,10,10])
+
+
+i_file= open('15ppb_all_spectrum.dat', "r")
+temp = i_file.readlines()
+temp=[i.strip('\n') for i in temp]
+data15=np.array([(row.split('\t')) for row in temp], dtype=np.float32)
+f_15=data15[:,0]
+data15=data15[:,1:101]
+I=[np.trapz(data15[:,i],f_15) for i in range(100)]
+data15=data15/I
+data15=data15.reshape([1600,10,10])
+
+
+i_file= open('1.5ppb_all_spectrum.dat', "r")
+temp = i_file.readlines()
+temp=[i.strip('\n') for i in temp]
+data1p5=np.array([(row.split('\t')) for row in temp], dtype=np.float32)
+f_1p5=data1p5[:,0]
+data1p5=data1p5[:,1:101]
+I=[np.trapz(data1p5[:,i],f_1p5) for i in range(100)]
+data1p5=data1p5/I
+data1p5=data1p5.reshape([1600,10,10])
+
+
 
 # from loader import *
 
@@ -60,7 +117,7 @@ def gen_lor_amp(x_data,beta):
 
 def positive_mse(y_pred,y_true):                
     loss=np.dot((10**8*(y_pred-y_true>0)+np.ones(y_true.size)).T,(y_pred-y_true)**2)
-    return sum(loss)/y_true.size
+    return np.sum(loss)/y_true.size
 
 def pos_mse_loss(beta, X, Y,function):                
     return positive_mse(function(X,beta), Y)
@@ -73,6 +130,10 @@ def find_peak_sym_supp(peak,l_pos,r_pos, win_len_mul, smooth_win, Y):
     # smooth_win= how much do we smooth the function
             
     Y_smooth=smooth_data(Y,smooth_win)
+    
+    
+    l_pos
+    r_pos
     
     if l_pos==r_pos:
         y_data=Y_smooth[l_pos]
@@ -88,41 +149,17 @@ def find_peak_sym_supp(peak,l_pos,r_pos, win_len_mul, smooth_win, Y):
     # plt.plot(Y_smooth)
     # plt.plot(range(l_pos,r_pos),y_data+1,'--')    
     
-    
-    
-
     l_pos_temp=Y_max_idx-1
     r_pos_temp=Y_max_idx+1
         
     while  Y_smooth[l_pos_temp-1]<=Y_smooth[l_pos_temp]  and l_pos_temp>0:
         l_pos_temp=l_pos_temp-1
     
-    while  Y_smooth[r_pos_temp+1]<=Y_smooth[r_pos_temp] and r_pos_temp<dim_s-1: 
+    while  Y_smooth[r_pos_temp+1]<=Y_smooth[r_pos_temp] and r_pos_temp<res-2: 
         r_pos_temp=r_pos_temp+1
         
     return [l_pos_temp,r_pos_temp]
 
-def cos_window(t,M,o,d,al,be):
-    
-    if o<=t & t<o+al:
-        out=M/2*(1-np.cos(2*pi*(t-o)/(2*al)))
-    elif o+al<=t & t<o+al+d: 
-        out=M
-    elif o+al+d<= t & t<o+al+d+be:
-        out=M/2*(1-np.cos(2*pi*(be-(t-d-o-al))/(2*be)))
-    else:
-        out=0
-    return  out
-
-def cos_win(x_data,beta):    
-    M=beta[0]
-    o=beta[1]
-    d=beta[2]
-    al=beta[3]
-    be=beta[4]
-    
-    yvec=[cos_window(t,M,o,d,al,be)  for t in range(x_data.size)]
-    return yvec
 
 # init functions
 
@@ -145,33 +182,6 @@ def init_lor(x_data,y_data):
     
     return beta_init_lor
 
-def init_cos(x_data,y_data,win):
-    # order of arguments: M,o,d,al,be
-    y_smoth=smooth_data(y_data,win)
-    power=np.dot(y_data,y_data.T)/dim_s
-        
-    floor_th=0.1*np.sqrt(power)
-    # how to define the ceiling of the function
-    ceil_th=0.9*np.sqrt(power)    
-    
-    #  while extending 0 l_win_low /  win_up / l_win_high-r_win_high / win_down / r_win_low-dim_s
-    
-    l_win_low  = np.argmax(floor_th<y_smoth) 
-    r_win_low =dim_s- np.argmax(floor_th<np.flip(y_smoth) )
-    
-    l_win_high =  np.argmax(ceil_th<y_smoth) 
-    r_win_high =dim_s- np.argmax(ceil_th<np.flip(y_smoth) )    
-    
-    # M_init =ceil_th
-    # o_init = l_win_low  
-    # d_init = r_win_high -l_win_high 
-    # al_init= l_win_high-l_win_low  
-    # be_init= r_win_low- r_win_high
-    
-    beta_cos_int=[ceil_th, l_win_low, r_win_high -l_win_high, l_win_high-l_win_low, r_win_low- r_win_high]
-    
-    return beta_cos_int
-
 def is_solvent(y_data):
     # check the time we are under the mean minus the standard deviation
     perc=np.sum(y_data<np.mean(y_data)-1/2*np.sqrt(np.var(y_data)))/y_data.size<0.5
@@ -182,10 +192,61 @@ def is_solvent(y_data):
    
 #------------------------------------------------------------------------------
 
+INF=10**4
+
+def one_side_MSE (y_pred,y_true):        
+    if  y_pred-y_true>0:
+        loss=INF*(y_pred-y_true)**2
+    else:
+        loss=(y_pred-y_true)**2            
+    return(loss)
+
+
+def obj_one_side_MSE(beta, X, Y):
+    p=np.poly1d(beta)
+    error = sum([one_side_MSE(p(X[i]), Y[i]) for i in range(X.size)])/X.size
+    return(error)
+
+def quick_remove_bias(data):    
+    # find the minimum over the spacial dimension
+    min_spec=np.min(data,axis=(1,2))    
+        
+    mean = np.mean(min_spec)
+    min_spec -= np.mean(min_spec)
+    autocorr_f = np.correlate(min_spec, min_spec, mode='full')
+    mid=int(np.where(autocorr_f==max(autocorr_f ))[0])
+    temp = autocorr_f[mid:]/autocorr_f[mid]    
+    # plt.plot(temp)
+   
+    min_spec=np.min(data,axis=(1,2))          
+    beta_init=np.polyfit(f_vec,min_spec,3)
+    poly_min=np.poly1d(np.polyfit(f_vec,min_spec,3))(f_vec)
+    beta_init[3]=beta_init[3]+min(min_spec-poly_min)
+
+    result = minimize(obj_one_side_MSE, beta_init, args=(f_vec,min_spec), method='Nelder-Mead', tol=1e-9)   
+
+    beta_hat = result.x                 
+    beta_hat -beta_init
+    poly_min_hat=np.poly1d(beta_hat)(f_vec)
+    
+    poly_min_hat=poly_min_hat+min(min_spec-poly_min_hat)
+    
+    plt.plot(poly_min_hat)
+    plt.plot(min_spec)
+    
+    return poly_min_hat
+    
+
+def smooth_data(data,win):
+    return np.array([np.mean(data[int(np.max([j-win,0])):int(np.min([j+win,data.size]))]) for j in  range(data.size)])
+
+
+#------------------------------------------------------------------------------
+
 res=1600
 dim_s=100
 
-# poly_min_hat = quick_remove_bias(data1500)
+poly_min_hat = quick_remove_bias(data1500)
 
 data_sparse = np.reshape(data1500, [res, dim_s]) - np.reshape(poly_min_hat,[res,1])
 data_sparse = data_sparse - np.min(data_sparse)
@@ -212,71 +273,44 @@ data_mean_sparse=np.mean(data_sparse,axis=1)
 
 def peaks_cwt_1(data_mean):
     peaks = sci.find_peaks_cwt(data_mean, np.arange(0.001,10)) 
-    [ prominences , l_ips, r_ips]=sci.peak_prominences(data_mean, peaks ,wlen=50)
+    [ prominences , l_ips, r_ips]=sci.peak_prominences(data_mean, peaks ,wlen=10)
     results_eighty = sci.peak_widths(data_mean, peaks, rel_height=0.8)
     peak_width=results_eighty[0]
-    l_ips=(np.floor(results_eighty[2]))
-    r_ips=(np.ceil(results_eighty[3]))
+    l_ips=(np.floor(results_eighty[2])-1)
+    r_ips=(np.ceil(results_eighty[3])+1)
     l_ips.astype(int)
     r_ips.astype(int)
-    return [peaks, prominences , l_ips, r_ips, peak_width]
-    
+    return [peaks, prominences , l_ips, r_ips, peak_width]    
 
 def peaks_standard(data_mean):
 # want to 
-    peaks, properties = sci.find_peaks(smooth_data(data_mean_sparse,2),prominence=0.01) 
+    peaks, properties = sci.find_peaks(data_mean,prominence=0.01) 
     prominences=properties['prominences']    
     peak_width=properties['right_bases']-properties['left_bases']
-    l_ips=int(properties['left_bases'])    
-    r_ips=int(properties['right_bases'])
+    l_ips=np.floor(properties['left_bases']) 
+    l_ips=l_ips-5
+    r_ips=np.ceil(properties['right_bases'])
+    r_ips=r_ips+5
+    
     l_ips.astype(int)
     r_ips.astype(int)
     return [peaks, prominences , l_ips, r_ips, peak_width]
 
-method=0
+method=1
 
 #------------------------------------------
 if method==0:
-    [peaks, prominences , l_ips, r_ips, peak_width]=peaks_cwt_1(data_mean_sparse)
+    [peaks, peak_prom, l_ips, r_ips, peak_width]=peaks_cwt_1(data_mean_sparse)
 elif method==1:
     [peaks, peak_prom , l_ips, r_ips, peak_width]=peaks_standard(data_mean_sparse)
 
 peak_high=data_mean_sparse[peaks]
 
-r_ips.astype(int)
-l_ips.astype(int)
-# #for  i in range(int(rough_peak_positions.size)):    
-# if False:
-#     plt.plot(f_sup,data_mean_sparse)        
-#     plt.plot(f_sup[peaks],data_mean_sparse[peaks],'*')
-#     for  i in range(peaks.size):                                
-#         plt.plot(f_sup[l_ips[i]:r_ips[i]],data_mean_sparse[l_ips[i]:r_ips[i]]+1/2,'--')
-        
 
-# plt.plot(data_mean_sparse)
-# plt.plot(peaks,data_mean_sparse[peaks],'*')
-
-# #------------------------------------------
-
-# peaks, properties = sci.find_peaks(smooth_data(data_mean_sparse,2),prominence=0.01) 
-
-# plt.plot(data_mean_sparse)
-# plt.plot(peaks,data_mean_sparse[peaks],'*')
-
-
-
-# peak_prom=peak_prom/np.sqrt(np.var(peak_prom))
-# #peak_width=properties['widths']
-# #peak_width=peak_width/np.sqrt(np.var(peak_width))
-# #peak_width=properties['widths']
-# #
-# peak_width=properties['right_bases']-properties['left_bases']
-# peak_width=peak_width/np.sqrt(np.var(peak_width))
-# peak_high=(data_mean_sparse[peaks])/np.sqrt(np.var(data_mean_sparse[peaks]))
 # # ANY CHOICE OF THE METRIC HERE!?
 
 # metric=10*peak_high+5*peak_prom+peak_width
-metric=10*peak_high + 5*prominences
+metric=10*peak_high + 5*peak_prom
 
 idx_peaks=np.flip(np.argsort(metric))
 idx=peaks[idx_peaks]
@@ -286,13 +320,13 @@ rough_peak_positions = idx
 if False:
     for  i in range(5):        
         p=idx_peaks[i]
-        l_ips=int(properties['left_bases'][p])
-        r_ips=int(properties['right_bases'][p])
+
+        l_ips.astype(int)
+        r_ips.astype(int)
         
-        plt.plot(f_vec,data_mean_sparse)
-        
+        plt.plot(f_vec,data_mean_sparse)        
         plt.plot(f_vec[peaks[p]],data_mean_sparse[peaks][p],'*')
-        plt.plot(f_vec[l_ips:r_ips],data_mean_sparse[l_ips:r_ips]+5,'--')
+        plt.plot(f_vec[int(l_ips[p]):int(r_ips[p])],data_mean_sparse[int(l_ips[p]):int(r_ips[p])]+1,'--')
     
 #----------------------------------------------------------
 # let's say that if the peak prominance is in the 75%  quantile, than we use the expand peak method only
@@ -322,7 +356,7 @@ data_sparse_back[0,:,:]=data_sparse
 # MAIN LOOP OVER THE PEAKS
 #------------------------------------------------------------------------------
 
-plot_f=1
+plot_f=0
 plot_t=0
 check_sup_fig=0
 
@@ -334,11 +368,11 @@ for  i in range(int(rough_peak_positions.size)):
 
         p=idx_peaks[i]
         
-        [l_win, r_win] = find_peak_sym_supp(peaks[p],int(l_ips[p]),int(r_ips[p]), 2, 3, data_mean_sparse)
-        
-        #[l_win, r_win],[l_ips,r_ips]
         l_ips = l_ips.astype(int)
         r_ips = r_ips.astype(int)
+        [l_win, r_win] = find_peak_sym_supp(peaks[p],int(l_ips[p]),int(r_ips[p]), 2, 3, data_mean_sparse)
+        
+        #[l_win, r_win],[l_ips,r_ips] 
         if check_sup_fig:
             plt.plot(data_mean_sparse)
             plt.plot(peaks[p],data_mean_sparse[peaks[p]],'*')
@@ -357,8 +391,8 @@ for  i in range(int(rough_peak_positions.size)):
         
         beta_init_lor=init_lor(x_data,y_data)
                
-        #result = minimize(pos_mse_loss, beta_init_lor, args=(x_data,y_data,gen_lor_amp), method='Nelder-Mead', tol=1e-8)
-        result = minimize(mse_loss, beta_init_lor, args=(x_data,y_data,gen_lor_amp), method='Nelder-Mead', tol=1e-12)
+        result = minimize(pos_mse_loss, beta_init_lor, args=(x_data,y_data,gen_lor_amp), method='Nelder-Mead', tol=1e-8)
+        #result = minimize(mse_loss, beta_init_lor, args=(x_data,y_data,gen_lor_amp), method='Nelder-Mead', tol=1e-12)
         beta_hat_lor=result.x    
         
         if plot_f:
@@ -406,7 +440,7 @@ for  i in range(int(rough_peak_positions.size)):
         # # refit the lorenzian in the smaller interval        
         # # use the previous estiamate to start
         # y_data=np.mean(data_sparse_back[i,l_win:r_win,int(beta_hat_cos[1]):int(sum(beta_hat_cos[2:5]))],axis=1)        
-        # x_data = f_sup[l_win:r_win]    
+        # x_data = f_vec[l_win:r_win]    
         # #bias_f2 = 0
         # bias_f2 = np.mean(np.sort(y_data)[0:int(y_data.size/10)+1])
         # y_data = y_data -bias_f2 
@@ -463,21 +497,21 @@ for  i in range(int(rough_peak_positions.size)):
     else:
             c='b'
             
-    plt.plot(f_sup[peaks[p]],np.sum(comp_beta_cos[i,idx_s_l]),color=c,marker='*')            
-    plt.plot(f_sup[peaks[p]],np.sum(comp_beta_cos[i,idx_s_r]),color=c,marker='*')            
-    plt.plot(f_sup[peaks[p]],comp_beta_cos[i,1],color=c,marker='o')
-    plt.plot(f_sup[peaks[p]],sum(comp_beta_cos[i,idx_d_r]),color=c,marker='o')
-    plt.plot([f_sup[peaks[p]],f_sup[peaks[p]]],[np.sum(comp_beta_cos[i,idx_d_l]),sum(comp_beta_cos[i,idx_d_r])],'--'+c)
-    plt.plot([f_sup[peaks[p]],f_sup[peaks[p]]],[np.sum(comp_beta_cos[i,idx_s_l]),sum(comp_beta_cos[i,idx_s_r])],c)
+    plt.plot(f_vec[peaks[p]],np.sum(comp_beta_cos[i,idx_s_l]),color=c,marker='*')            
+    plt.plot(f_vec[peaks[p]],np.sum(comp_beta_cos[i,idx_s_r]),color=c,marker='*')            
+    plt.plot(f_vec[peaks[p]],comp_beta_cos[i,1],color=c,marker='o')
+    plt.plot(f_vec[peaks[p]],sum(comp_beta_cos[i,idx_d_r]),color=c,marker='o')
+    plt.plot([f_vec[peaks[p]],f_vec[peaks[p]]],[np.sum(comp_beta_cos[i,idx_d_l]),sum(comp_beta_cos[i,idx_d_r])],'--'+c)
+    plt.plot([f_vec[peaks[p]],f_vec[peaks[p]]],[np.sum(comp_beta_cos[i,idx_s_l]),sum(comp_beta_cos[i,idx_s_r])],c)
 
     # add the peak number 
-    #plt.annotate(str(i), ([f_sup[peaks[p]],sum(comp_beta_cos[i,idx_s_r])))
+    #plt.annotate(str(i), ([f_vec[peaks[p]],sum(comp_beta_cos[i,idx_s_r])))
         
-    plt.annotate(str(i), (f_sup[peaks[p]],sum(comp_beta_cos[i,idx_d_r])+20))
+    plt.annotate(str(i), (f_vec[peaks[p]],sum(comp_beta_cos[i,idx_d_r])+20))
                                                   
                                                   
-plt.plot(f_sup,data_mean_sparse*100)
-#plt.plot(f_sup[peaks],100*data_mean_sparse[peaks],'*r')
+plt.plot(f_vec,data_mean_sparse*100)
+#plt.plot(f_vec[peaks],100*data_mean_sparse[peaks],'*r')
              
 
 X=comp_beta_cos[:,1]
@@ -508,7 +542,7 @@ plt.ylabel('duration')
 # data_sparse_back[i+1]=
     
     
-# X, Y = np.meshgrid(f_sup, np.array(range(dim_s)))
+# X, Y = np.meshgrid(f_vec, np.array(range(dim_s)))
 # Z = data_sub
 # fig = plt.figure()
 # ax = plt.axes(projection='3d')
