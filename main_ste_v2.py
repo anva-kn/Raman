@@ -244,8 +244,6 @@ from lmfit.models import LorentzianModel, QuadraticModel
 mod = LorentzianModel()
 
 
-
-
 data_temp=data_o-poly_min_hat
 data_temp_mean=smooth_data(data_o_nb,win_t)
 
@@ -301,13 +299,6 @@ plt.show()
 ##############################################################################
 ##############################################################################
 ##############################################################################
-
-
-
-
-
-
-
 
 
 
