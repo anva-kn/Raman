@@ -319,8 +319,10 @@ def init_lor(x_data,y_data):
 # Start  processing data
 
 # data_MG=data1500
-data_MG=data_o
-mean_data_MG=np.mean(data1500.reshape(res,dim_s),axis=1)
+# data_MG=data_o
+#mean_data_MG=np.mean(data1500.reshape(res,dim_s),axis=1)
+
+mean_data_MG=data_o
 
 mean_wo_peaks=smooth_data(mean_data_MG.copy(),5)
 peaks, properties = sci.find_peaks(mean_data_MG,width=1/10000)
@@ -390,14 +392,13 @@ beta_hat -beta_init
 poly_min_hat=np.poly1d(beta_hat)(f_sup)
 
 
-min_spec=np.min(data_MG,axis=(1,2))    
+#data_sparse=data_MG.reshape(res,dim_s)-np.reshape(poly_min_hat,[res,1])
+#data_sparse=data_sparse-np.min(data_sparse)
 
-data_sparse=data_MG.reshape(res,dim_s)-np.reshape(poly_min_hat,[res,1])
-data_sparse=data_sparse-np.min(data_sparse)
-
-   
+data_sparse=mean_data_MG.reshape(res,1)-np.reshape(poly_min_hat,[res,1])
 
 data_mean_sparse=np.mean(data_sparse,axis=1)
+
 
 # algorthim: 
     # find peaks
@@ -615,7 +616,7 @@ count=np.zeros(4)
 
 for i in range(int(rough_peak_positions.size)):
     
-    min_MSE_pos=int(argmin(comp_MSE[i,:]))
+    min_MSE_pos=int(np.argmin(comp_MSE[i,:]))
     l_win=int(comp_range[i,0])
     r_win=int(comp_range[i,1])
     x_data = f_sup[l_win:r_win]
@@ -642,6 +643,8 @@ if recap_peak_fit:
     plt.plot(f_sup,data_mean_sparse,label='original data') 
     plt.plot(f_sup[rough_peak_positions],data_mean_sparse[rough_peak_positions],'*',label='matched peaks')
     plt.plot(f_sup,data_hat,label='spectrum estimate') 
+    plt.legend()
+    plt.show()
     
 # CORRELATE SPATIALLY
 
@@ -656,7 +659,7 @@ def poly4(x_data,beta):
 
 def positive_mse(y_pred,y_true):                
     loss=np.dot((10**8*(y_pred-y_true>0)+np.ones(y_true.size)).T,(y_pred-y_true)**2)
-    return sum(loss)/y_true.size
+    return np.sum(loss)/y_true.size
 
 def pos_mse_loss(beta, X, Y,function):                
     return positive_mse(function(X,beta), Y)
@@ -700,8 +703,9 @@ data1p5p=data_pre_process(data1p5)
 
 # total correlation plot
 
-corr_1500= np.dot(data_hat,data1500.reshape(res,dim_s)).reshape(10,10)
-
+corr_1500= np.dot(data_hat,data1500p.reshape(res,dim_s)).reshape(10,10)
+corr_15= np.dot(data_hat,data15p.reshape(res,dim_s)).reshape(10,10)
+corr_1p5= np.dot(data_hat,data1p5p.reshape(res,dim_s)).reshape(10,10)
 
 plot_cor_space=1
 
@@ -714,31 +718,12 @@ if plot_cor_space:
     plt.show()
 
 
-
-# plt.figure('Correlation with data 1500ppb')
-# plt.imshow(corr_1500, cmap='hot', interpolation='nearest')
-# plt.colorbar()
-# plt.show()
-
-# corr_15= np.dot(data_hat,data15p.reshape(res,dim_s)).reshape(10,10)
-
-# plt.figure('Correlation with data 15ppb')
-# plt.imshow(corr_15, cmap='hot', interpolation='nearest')
-# plt.colorbar()
-# plt.show()
-
-# corr_1p5= np.dot(data_hat,data1p5.reshape(res,dim_s)).reshape(10,10)
-
-# plt.figure('Correlation with data 1.5ppb')
-# plt.imshow(corr_1p5, cmap='hot', interpolation='nearest')
-# plt.colorbar()
-# plt.show()
-
-#data1p5
+# per peak correlation
 
 mean_corr_1500=np.zeros(int(rough_peak_positions.size))
 mean_corr_15=np.zeros(int(rough_peak_positions.size))
 mean_corr_1p5=np.zeros(int(rough_peak_positions.size))
+
 
 
 for i in range(int(rough_peak_positions.size)):
@@ -747,14 +732,24 @@ for i in range(int(rough_peak_positions.size)):
     r_win=int(comp_range[i,1])
     x_data = f_sup[l_win:r_win]
     
-    corr_1500[i]=np.dot(data_hat[l_win:r_win]       
+    #np.dot(data_hat,data1p5p.reshape(res,dim_s)).reshape(10,10)
+     
+    mean_corr_1500[i]=np.mean(np.dot(data_hat[l_win:r_win],data1500p[l_win:r_win].reshape([r_win-l_win,dim_s])))
+    mean_corr_15[i]=np.mean(np.dot(data_hat[l_win:r_win],data15p[l_win:r_win].reshape([r_win-l_win,dim_s])))
+    mean_corr_1p5[i]=np.mean(np.dot(data_hat[l_win:r_win],data1p5p[l_win:r_win].reshape([r_win-l_win,dim_s])))                         
     # gaus
     # lor 
     # gen_lor
     # cos
-    count[min_MSE_pos]=count[min_MSE_pos]+1
+
+plot_corr_peaks=1
+
+if plot_corr_peaks:
+    plt.figure('Total correlation per peak')
+    plt.plot(mean_corr_1500,'-*',label='1500ppb')
+    plt.plot(mean_corr_15,'-.',label='15ppb')
+    plt.plot(mean_corr_1p5,'-|',label='1.5ppb')
+    plt.xticks(np.arange(int(rough_peak_positions.size)), f_sup[rough_peak_positions])
+    plt.legend()
+    plt.show()
     
-    if    min_MSE_pos==0:     
-        data_hat[l_win:r_win]=comp_bias[i]+gauss_amp(x_data,comp_beta_gauss[i])  
-
-
