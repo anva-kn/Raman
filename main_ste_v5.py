@@ -19,6 +19,7 @@ res=1600
 dim_s=100
 
 # turn on the loader
+
 loader_on=1
 
 if loader_on:
