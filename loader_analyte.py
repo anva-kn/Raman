@@ -81,9 +81,7 @@ if loader_on:
     data_mix2_2=np.array([(row.split('\t')) for row in temp], dtype=np.float32)        
     f_sup_m22=data_mix2_2[:,0]
     data_mix2_2=data_mix1_2[:,1:101]
-        
-    
-    
+            
     init_plot=0
     
     if init_plot:
@@ -92,8 +90,8 @@ if loader_on:
         plt.plot(f_sup_mg,np.mean(data_mg,axis=1),label='MG')
         plt.plot(f_sup_mg,np.mean(data_mix1_1,axis=1),'--',label='MIX1_1')
         plt.plot(f_sup_mg,np.mean(data_mix1_2,axis=1),'-.',label='MIX1_2')
-        plt.plot(f_sup,np.mean(data_mix2_1,axis=1),'-*',label='MIX2_1')
-        plt.plot(f_sup,np.mean(data_mix2_2,axis=1),'-|',label='MIX2_2')
+        plt.plot(f_sup,np.mean(data_mix2_1,axis=1),'--*',label='MIX2_1')
+        plt.plot(f_sup_mg,np.mean(data_mix2_2,axis=1),'--|',label='MIX2_2')
         plt.legend()
 
 #-----------------------------------------------------------
