@@ -370,6 +370,7 @@ for  i in range(int(rough_peak_positions.size)):
         
         l_ips = l_ips.astype(int)
         r_ips = r_ips.astype(int)
+        
         [l_win, r_win] = find_peak_sym_supp(peaks[p],int(l_ips[p]),int(r_ips[p]), 2, 3, data_mean_sparse)
         
         #[l_win, r_win],[l_ips,r_ips] 
