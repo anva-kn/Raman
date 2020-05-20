@@ -17,6 +17,10 @@ from math import pi
 from ste_model_spectrum import *
 
 
+res=964
+dim_s=100
+
+
 #------------------------------------------------------------------------------
 import shelve
 
@@ -39,14 +43,19 @@ f_ACE=dataACE[:,0]
 dataACE=dataACE[:,1]
 
 #------------------------------------------------------------------------------
+f_sup=f_sup[:-1]
+data_mean=np.mean(data,axis=2)
+
+
+
+#------------------------------------------------------------------------------
 # aligt the data
 
 #  what's the shift?
 
-np.where(f_ACE==f_sup[0])
 
-align_init=argmin((f_ACE-f_sup[0])**2)
-align_end=argmin((f_ACE-f_sup[-1])**2)
+align_init=np.argmin((f_ACE-f_sup[0])**2)
+align_end=np.argmin((f_ACE-f_sup[-1])**2)
 
 
 # f_ACE[47]
@@ -54,43 +63,44 @@ align_end=argmin((f_ACE-f_sup[-1])**2)
 # f_sup[0]
 # f_sup[1]
 
-data_ace_temp =np.zeros([len_temp])
+len_temp=f_sup.shape[0]
+data_ace_temp =np.zeros(len_temp)
+n_feq=align_init
 
-len_temp=964
 i=0
 s1=f_sup.copy()
 
-while i<len_temp-1:    
-    delta_f_int=s1[i+1]-s1[i]
-    pos=np.where((s2>=n_feq) & (s2<=n_feq+delta_f_int))
+while i<len_temp-1:        
+    pos=np.where((f_ACE>=f_sup[i]) & (f_ACE<=f_sup[i+1]))
     
     # 
-    data_ace_temp[i]     =np.mean(dataACE[alg1+pos,:],axis=1)
+    data_ace_temp[i] =np.mean(dataACE[pos])
     
     # update counter
     i=i+1
-    n_feq=n_feq+delta_f_int
     
-    
-# just align at the index 47
-dataACE[align_init:align_end]
+# last point just guess
+data_ace_temp[i]=dataACE[align_end]
 
-f_ACE[align_init:align_end].shape
-f_sup.shape
+# # just align at the index 47
+# dataACE[align_init:align_end]
+
+# f_ACE[align_init:align_end].shape
+# f_sup.shape
 
 
-plt.plot(f_ACE[align_init:align_end])
-plt.plot(f_ACE, dataACE)
-plt.plot(f_sup, data_mean[0])
-    
+# plt.plot(f_ACE, dataACE,label='orig')
+# plt.plot(f_sup, data_ace_temp,label='temp')
+# plt.plot(f_sup, data_mean[0],label='data')
+
+# plt.legend()
+# plt.show()
+
+# update the data mean
+
+data_mean[0]=data_ace_temp
 
 #------------------------------------------------------------------------------
-
-res=964
-dim_s=100
-
-f_sup=f_sup[:-1]
-data_mean=np.mean(data,axis=2)
 
 plt.figure('raw data')
 labels = ['ACE', 'MG', 'mix1_1','mix1_2','mix2_1','mix2_2']
@@ -104,6 +114,10 @@ plt.show()
 
 num_peaks=5
 
+
+
+data_mean=np.mean(data,axis=2)
+data_mean[0]=data_ace_temp
  
 # model MG
 data_MG_sparse=remove_est_florescence(f_sup,data[1])
@@ -119,11 +133,12 @@ recap_spectrum(f_sup,data_MG_mean,num_peaks,*vecM)
 
 # what happens with the mean here? are we worried about it?
 
-
 # # model ACE 
 
-data_ACE_sparse=remove_est_florescence(f_sup,data[0])
-data_ACE_mean=np.mean(data_ACE_sparse,axis=1)
+#data_ACE_sparse=remove_est_florescence(f_sup,data[0])
+#data_ACE_mean=np.mean(data_ACE_sparse,axis=1)
+data_ACE_sparse=remove_est_florescence(f_sup,data_mean[0])
+data_ACE_mean=data
 
 [comp_rangeA, comp_beta_gaussA, comp_beta_lorA, comp_beta_gen_lorA, comp_beta_cosA, comp_MSEA, comp_biasA]=model_spectrum_ste(f_sup,data_ACE_mean,num_peaks)
 
@@ -134,15 +149,13 @@ recap_spectrum(f_sup,data_ACE_mean,num_peaks, comp_rangeA, comp_beta_gaussA, com
 
 # check special  correlation with the 2 measuraments set in the two time instants
 
-
+#------------------------------------------------------------------------------
 # store per peak correlation
 
 mean_m11=np.zeros(int(num_peaks))
 mean_m12=np.zeros(int(num_peaks))
 mean_m21=np.zeros(int(num_peaks))
 mean_m22=np.zeros(int(num_peaks))
-
-
 
 # start with data 15
 data11=data_pre_process(f_sup,data[2])
@@ -151,10 +164,16 @@ data21=data_pre_process(f_sup,data[4])
 data22=data_pre_process(f_sup,data[5])
 
 
-dataM_hat=reconstruct_spectrum(f_sup,*vecM)
+dataMG_hat=reconstruct_spectrum(f_sup,*vecM)
 dataA_hat=reconstruct_spectrum(f_sup,*vecA)
 
 # total correlation plot MG
+corr_11MG= np.dot(dataMG_hat,data11.reshape(res,dim_s)).reshape(10,10)
+corr_12MG= np.dot(dataMG_hat,data12.reshape(res,dim_s)).reshape(10,10)
+corr_21MG= np.dot(dataMG_hat,data21.reshape(res,dim_s)).reshape(10,10)
+corr_22MG= np.dot(dataMG_hat,data22.reshape(res,dim_s)).reshape(10,10)
+
+# total correlation plot ACE
 corr_11A= np.dot(dataA_hat,data11.reshape(res,dim_s)).reshape(10,10)
 corr_12A= np.dot(dataA_hat,data12.reshape(res,dim_s)).reshape(10,10)
 corr_21A= np.dot(dataA_hat,data21.reshape(res,dim_s)).reshape(10,10)
@@ -204,7 +223,7 @@ if plot_time_corr:
     plt.legend()
     plt.show()
     
-    
+
 # average correlation PER PEAK
 mean_corr11M=np.zeros(num_peaks)
 mean_corr12M=np.zeros(num_peaks)
@@ -250,8 +269,6 @@ for i in range(num_peaks):
     mean_corr21A[i]=np.mean(np.dot(dataA_hat[l_win:r_win],data21[l_win:r_win].reshape([r_win-l_win,dim_s])))
     mean_corr22A[i]=np.mean(np.dot(dataA_hat[l_win:r_win],data22[l_win:r_win].reshape([r_win-l_win,dim_s])))
     
-
-
 corr_peak=1
 if corr_peak:
     
@@ -269,11 +286,6 @@ if corr_peak:
     plt.legend()
     plt.show()
     
-
-    
-    
-
-
 
 # """
 # Created on Wed May  6 11:40:53 2020

@@ -306,7 +306,10 @@ def pos_mse_loss(beta, X, Y,function):
 def remove_est_florescence(f_sup,data_sub):
     
     #min_data_amm=np.min(data_sub,axis=1)
-    min_data_amm=np.mean(data_sub,axis=1)
+    if data_sub.ndim>1:
+        min_data_amm=np.mean(data_sub,axis=1)
+    else:
+        min_data_amm=data_sub
     
     poly_min=np.poly1d(np.polyfit(f_sup,min_data_amm,3))(f_sup)
     poly_min_pos=poly_min+min(min_data_amm-poly_min)
@@ -317,19 +320,19 @@ def remove_est_florescence(f_sup,data_sub):
     result = minimize(pos_mse_loss, beta_init, args=(f_sup,min_data_amm,poly4), method='Nelder-Mead', tol=1e-12)
     
     beta_hat = result.x                 
-    
-    plt_back=1
-    
-    if plt_back:
-        plt.figure('Pos MSE fit')
-        plt.plot(f_sup,np.mean(data_sub,axis=1),'--',label='original data')    
-        plt.plot(f_sup,min_data_amm,label='min data')    
-        plt.plot(f_sup,np.mean(data_sub,axis=1),'-.',label='data minus bias')
-        plt.plot(f_sup,poly4(f_sup,beta_init),'-.',label='poly 4 init')
-        plt.plot(f_sup,poly4(f_sup,beta_hat),'-.',label='poly 4 hat')
-        plt.legend()
         
-    
+    plt_back=1
+        
+        if plt_back:
+            plt.figure('Pos MSE fit')
+            #plt.plot(f_sup,np.mean(data_sub,axis=1),'--',label='original data')    
+            plt.plot(f_sup,min_data_amm,label='original data')    
+            #plt.plot(f_sup,np.mean(data_sub,axis=1),'-.',label='data minus bias')
+            plt.plot(f_sup,poly4(f_sup,beta_init),'-.',label='poly 4 init')
+            plt.plot(f_sup,poly4(f_sup,beta_hat),'-.',label='poly 4 hat')
+            plt.legend()
+            
+        
     # subtract mean
     
     data_sub2=np.subtract(data_sub,poly4(f_sup,beta_hat).reshape([data_sub.shape[0],1]))
@@ -340,7 +343,7 @@ def remove_est_florescence(f_sup,data_sub):
     if plt_final:
         plt.figure('Final recap')        
         plt.plot(f_sup,poly4(f_sup,beta_hat),'--',label='poly 4 hat')
-        plt.plot(f_sup,np.mean(data_sub,axis=1),label='original data-back')    
+        plt.plot(f_sup,min_data_amm,label='original data-back')    
         plt.plot(f_sup,np.mean(data_sub2,axis=1),label='original data-back-pos_MSE')    
         plt.legend()
         
