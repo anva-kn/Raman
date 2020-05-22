@@ -302,7 +302,6 @@ def pos_mse_loss(beta, X, Y,function):
     return positive_mse(function(X,beta), Y)
 
 
-
 def remove_est_florescence(f_sup,data_sub):
     
     #min_data_amm=np.min(data_sub,axis=1)
@@ -323,7 +322,7 @@ def remove_est_florescence(f_sup,data_sub):
         
     plt_back=1
         
-        if plt_back:
+    if plt_back:
             plt.figure('Pos MSE fit')
             #plt.plot(f_sup,np.mean(data_sub,axis=1),'--',label='original data')    
             plt.plot(f_sup,min_data_amm,label='original data')    
@@ -335,20 +334,27 @@ def remove_est_florescence(f_sup,data_sub):
         
     # subtract mean
     
-    data_sub2=np.subtract(data_sub,poly4(f_sup,beta_hat).reshape([data_sub.shape[0],1]))
-        
-    
+    if data_sub.ndim>1:
+        data_sub2=np.subtract(data_sub,poly4(f_sup,beta_hat).reshape([data_sub.shape[0],1]))
+    else:
+        data_sub2=data_sub-poly4(f_sup,beta_hat)
+            
     plt_final=1
     
     if plt_final:
         plt.figure('Final recap')        
         plt.plot(f_sup,poly4(f_sup,beta_hat),'--',label='poly 4 hat')
         plt.plot(f_sup,min_data_amm,label='original data-back')    
-        plt.plot(f_sup,np.mean(data_sub2,axis=1),label='original data-back-pos_MSE')    
+        if data_sub.ndim>1:
+            plt.plot(f_sup,np.mean(data_sub2,axis=1),label='original data-back-pos_MSE')    
+        else:
+            plt.plot(f_sup,data_sub2,label='original data-back-pos_MSE')    
+        
         plt.legend()
         
     return data_sub2
     
+
 #------------------------------------------------------------------------------
 # main function here
 

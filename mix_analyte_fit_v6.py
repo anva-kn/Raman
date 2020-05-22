@@ -16,7 +16,6 @@ from math import pi
 
 from ste_model_spectrum import *
 
-
 res=964
 dim_s=100
 
@@ -88,13 +87,13 @@ data_ace_temp[i]=dataACE[align_end]
 # f_ACE[align_init:align_end].shape
 # f_sup.shape
 
-
-# plt.plot(f_ACE, dataACE,label='orig')
-# plt.plot(f_sup, data_ace_temp,label='temp')
-# plt.plot(f_sup, data_mean[0],label='data')
-
-# plt.legend()
-# plt.show()
+while False:
+    plt.plot(f_ACE, dataACE,label='orig')
+    plt.plot(f_sup, data_ace_temp,label='temp')
+    plt.plot(f_sup, data_mean[0],label='data')
+    
+    plt.legend()
+    plt.show()
 
 # update the data mean
 
@@ -112,9 +111,7 @@ for data_mean, label in zip(data_mean, labels):
 plt.legend()
 plt.show()
 
-num_peaks=5
-
-
+num_peaks=10
 
 data_mean=np.mean(data,axis=2)
 data_mean[0]=data_ace_temp
@@ -123,43 +120,38 @@ data_mean[0]=data_ace_temp
 data_MG_sparse=remove_est_florescence(f_sup,data[1])
 
 data_MG_mean=np.mean(data_MG_sparse,axis=1)
+data_MG_mean_smooth = sci.savgol_filter(data_MG_mean, window_length = 11, polyorder = 5)
 
-[comp_rangeM, comp_beta_gaussM, comp_beta_lorM, comp_beta_gen_lorM, comp_beta_cosM, comp_MSEM, comp_biasM]=model_spectrum_ste(f_sup,data_MG_mean,num_peaks)
+[comp_rangeM, comp_beta_gaussM, comp_beta_lorM, comp_beta_gen_lorM, comp_beta_cosM, comp_MSEM, comp_biasM]=model_spectrum_ste(f_sup,data_MG_mean_smooth ,num_peaks)
 
 vecM=[comp_rangeM, comp_beta_gaussM, comp_beta_lorM, comp_beta_gen_lorM, comp_beta_cosM, comp_MSEM, comp_biasM]
 
-recap_spectrum(f_sup,data_MG_mean,num_peaks,*vecM)
+recap_spectrum(f_sup,data_MG_mean_smooth,num_peaks,*vecM)
+
+plt.plot(f_sup,data_MG_mean_smooth)
 
 #------------------------------------------------------------------------------
-# try to do some smoothing smooth out the curves
-
-
-window_length=10
-smooth = sci.savgol_filter(data_mean[0], window_length = 351, polyorder = 5)
-
-plt.plot(smooth)
-
-
-
-
-#------------------------------------------------------------------------------
-
-# what happens with the mean here? are we worried about it?
 
 # # model ACE 
 
-#data_ACE_sparse=remove_est_florescence(f_sup,data[0])
-#data_ACE_mean=np.mean(data_ACE_sparse,axis=1)
 data_ACE_sparse=remove_est_florescence(f_sup,data_mean[0])
-data_ACE_mean=data
 
-[comp_rangeA, comp_beta_gaussA, comp_beta_lorA, comp_beta_gen_lorA, comp_beta_cosA, comp_MSEA, comp_biasA]=model_spectrum_ste(f_sup,data_ACE_mean,num_peaks)
+data_ACE_mean_smooth=sci.savgol_filter(data_ACE_sparse, window_length = 11, polyorder = 5)
+#data_ACE_mean=data
+
+[comp_rangeA, comp_beta_gaussA, comp_beta_lorA, comp_beta_gen_lorA, comp_beta_cosA, comp_MSEA, comp_biasA]=model_spectrum_ste(f_sup,data_ACE_mean_smooth,num_peaks)
 
 vecA=[comp_rangeA, comp_beta_gaussA, comp_beta_lorA, comp_beta_gen_lorA, comp_beta_cosA, comp_MSEA, comp_biasA]
 
-recap_spectrum(f_sup,data_ACE_mean,num_peaks, comp_rangeA, comp_beta_gaussA, comp_beta_lorA, comp_beta_gen_lorA, comp_beta_cosA, comp_MSEA, comp_biasA)
+recap_spectrum(f_sup,data_ACE_mean_smooth,num_peaks, comp_rangeA, comp_beta_gaussA, comp_beta_lorA, comp_beta_gen_lorA, comp_beta_cosA, comp_MSEA, comp_biasA)
 
 
+# show the smoothing
+while False:
+    plt.figure("Smoothing")
+    plt.plot(data_ACE_sparse)
+    plt.plot(data_ACE_mean_smooth)
+    
 # check special  correlation with the 2 measuraments set in the two time instants
 
 #------------------------------------------------------------------------------
@@ -258,10 +250,10 @@ for i in range(num_peaks):
     
     #np.dot(data_hat,data1p5p.reshape(res,dim_s)).reshape(10,10)
      
-    mean_corr11M[i]=np.mean(np.dot(dataM_hat[l_win:r_win],data11[l_win:r_win].reshape([r_win-l_win,dim_s])))
-    mean_corr12M[i]=np.mean(np.dot(dataM_hat[l_win:r_win],data12[l_win:r_win].reshape([r_win-l_win,dim_s])))
-    mean_corr21M[i]=np.mean(np.dot(dataM_hat[l_win:r_win],data21[l_win:r_win].reshape([r_win-l_win,dim_s])))
-    mean_corr22M[i]=np.mean(np.dot(dataM_hat[l_win:r_win],data22[l_win:r_win].reshape([r_win-l_win,dim_s])))
+    mean_corr11M[i]=np.mean(np.dot(dataMG_hat[l_win:r_win],data11[l_win:r_win].reshape([r_win-l_win,dim_s])))
+    mean_corr12M[i]=np.mean(np.dot(dataMG_hat[l_win:r_win],data12[l_win:r_win].reshape([r_win-l_win,dim_s])))
+    mean_corr21M[i]=np.mean(np.dot(dataMG_hat[l_win:r_win],data21[l_win:r_win].reshape([r_win-l_win,dim_s])))
+    mean_corr22M[i]=np.mean(np.dot(dataMG_hat[l_win:r_win],data22[l_win:r_win].reshape([r_win-l_win,dim_s])))
     
     # gaus
     # lor 
