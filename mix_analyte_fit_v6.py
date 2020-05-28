@@ -9,7 +9,6 @@ import scipy.stats as stats
 from scipy.optimize import minimize
 from scipy.optimize import curve_fit
 import math
-import scipy
 from math import pi
 
 #import ste_model_spectrum.py
