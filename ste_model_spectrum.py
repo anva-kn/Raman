@@ -18,7 +18,6 @@ import math
 import scipy
 from math import pi
 
-
 #----------------------------------------------------------------------------
 #       FUNCTION TO BE FITTED
 #----------------------------------------------------------------------------
@@ -289,14 +288,20 @@ def peaks_standard(data_mean):
     #r_ips.astype(int)
     return [peaks, prominences , l_ips, r_ips, peak_width]
 
-
-
-
 #----------------------------------------------------------------------
 # Remove Estimated florescence
 #----------------------------------------------------------------------
 
 
+def recursive_merge(inter, start_index = 0):
+    for i in range(start_index, len(inter) - 1):
+        if inter[i][1] > inter[i+1][0]:
+            new_start = inter[i][0]
+            new_end = inter[i+1][1]
+            inter[i] = [new_start, new_end]
+            del inter[i+1]
+            return recursive_merge(inter.copy(), start_index=i)
+    return inter    
 
 def poly4(x_data,beta):
         p=np.poly1d(beta)
@@ -613,7 +618,7 @@ def recap_spectrum(f_sup,data_mean_sparse,number_of_peaks,comp_range, comp_beta_
     plt.legend()
     plt.show()
     
-    return
+    return data_hat
 
 
 
@@ -648,6 +653,172 @@ def data_pre_process(f_sup,data):
         plt.legend()
         
     return data_sub2
+
+
+def data_pre_process_v1(f_sup,data_temp):
+                
+    f_sup_temp=f_sup.copy()
+    idx_temp=range(f_sup.shape[0])
+    #data_temp=data[2]
+    data_mean=np.mean(data_temp,axis=1)
+    data_temp_mean=np.mean(data_temp,axis=1)
+    
+    # what's the interva we want to cover?
+    fit_th=0.8
+    
+    #while len_temp<fit_th*f_sup.shape[0]:
+    th_hist=np.zeros(10)
+    
+    for i0 in range(10):
+       
+        poly_min=np.poly1d(np.polyfit(f_sup_temp,data_temp_mean,3))(f_sup_temp)
+        poly_min_pos=poly_min+min(data_temp_mean-poly_min)
+        
+        beta_init=np.polyfit(f_sup_temp,data_temp_mean,4)
+        beta_init[4]=beta_init[4]+min(data_temp_mean-poly_min)
+            
+        #result = minimize(mse_loss, beta_init, args=(f_sup_temp,data_temp_mean,poly4), method='Nelder-Mead', tol=1e-12)
+        result = minimize(reg_pos_mse_loss, beta_init, args=(f_sup_temp,data_temp_mean,poly4), method='Nelder-Mead', tol=1e-12)
+        # look at the variance between the estimated florescence and the data, pick the interval in which this 
+        # variance is below somethig
+        
+        
+        beta_hat = result.x                 
+            
+        #est_clean=np.subtract(data_temp[idx_temp],est_flor.reshape([est_flor.shape[0],1]))
+        
+        est_flor=poly4(f_sup,beta_hat)
+        
+        est_clean=np.subtract(data_temp,est_flor.reshape([est_flor.shape[0],1]))
+        
+        # normalize variance
+        est_var=np.var(est_clean,axis=1)/np.var(est_clean)
+        
+        # find the portion of the data (original) in whi
+        th=min(est_var)
+        len_temp=0
+        
+        while len_temp<fit_th*f_sup.shape[0]:
+                    
+            pos=[]
+            
+            while len(pos)==0:
+                pos=np.array(np.where(est_var<th)[0])        
+                th=th*1.1
+                    
+            diff_pos=pos[1:]-pos[:-1]-1    
+            jumps=np.where(diff_pos>0)[0]
+            
+            #if the final element is res, the add a jomp an the end
+            if pos[-1]==res-1:
+                jumps=np.append(jumps,pos.shape[0]-1)
+            
+            final_lb=[]
+            final_rb=[]        
+                        
+            final_lb.append(pos[0])
+            final_rb.append(pos[jumps[0]])
+            
+            i=0
+            while i<jumps.shape[0]-1:
+                # 
+                final_lb.append(pos[jumps[i]+1])
+                # go to the next gap                
+                i=i+1
+                final_rb.append(pos[jumps[i]])
+            
+            # add the first and the last intervals 
+            win_tail=int(fit_th*f_sup.shape[0]/10)
+            final_lb.insert(0,0)
+            final_rb.insert(0,win_tail)
+            
+            final_lb.append(res-win_tail-1)
+            final_rb.append(res-1)
+                            
+            idx_lr=np.zeros([2,len(final_rb)])
+            idx_lr[0]=np.array(final_lb)
+            idx_lr[1]=np.array(final_rb)
+            idx_lr.astype(int)
+            idx_lr=idx_lr.T
+            
+            # merge intervals 
+            # remove the one intervals
+            idx_lr=idx_lr[np.where(idx_lr[:,1]-idx_lr[:,0]>2)[0],:]        
+    
+            merged = recursive_merge(idx_lr.tolist())
+            idx_lr = np.array(merged).astype(int)
+                                
+            # min length of the intervals here
+            win=win_tail/2
+            idx_lr=idx_lr[np.where(idx_lr[:,1]-idx_lr[:,0]>win)[0],:]
+                
+            len_temp=np.sum(idx_lr[:,1]-idx_lr[:,0])
+            th=th*1.1   
+            
+        # update  the fitting support
+                
+        # leh's see the final fitting
+    
+            ind_wb=[]
+            
+            # check the positions
+                
+            for i in range(idx_lr.shape[0]):
+                left=int(idx_lr[i,0])
+                right=int(idx_lr[i,1])+1    
+                ind_wb=ind_wb+list(range(left,right))    
+                
+            ind_wb=ind_wb+list(range(left,right))    
+            ind_wb=np.array(ind_wb)    
+        
+            f_sup_temp =  f_sup[ind_wb]
+            data_temp_mean =  data_mean[ind_wb]
+    
+    
+    
+        th_hist[i0]=th
+        # reduce the fitting threshould
+        fit_th=fit_th*0.95
+            
+    #######
+    ##
+    ## add the beginnig and the end to the interval, so we don't go all the way off!!!
+
+    
+     
+    if False:
+    #if True:
+        plt.plot(est_flor,label='est. flor. ')
+        plt.plot(data_mean, label='mean values')
+        plt.plot(np.mean(est_clean,axis=1),label='est mean values')
+        #plt.plot(est_var,label='variance estiamte')
+        plt.plot(ind_wb,data_mean[ind_wb],'*',label='good variance')
+        plt.plot(ind_wb,  data_temp_mean,'*',label='my interval')
+        plt.legend()
+        plt.show
+    
+    
+    # find the best scaling of the florescence to remove from each spectrum
+    
+    # var_additive=np.dot(est_flor,data_temp.reshape(res,dim_s))
+    # sub=np.outer(est_flor,np.dot(est_flor,data_temp)/var_additive)
+    
+    data_curr=data_temp-sub
+            
+    
+    # plt.plot(np.mean(data_curr,axis=1),label='new flor')
+    
+    # data11=data_pre_process(f_sup,data[2])
+    # data11=data11.reshape([res,dim_s])
+    
+    # plt.plot(np.mean(data11-data_curr,axis=1))
+    
+    # plt.plot(np.mean(data11,axis=1),label='old flor')
+    # plt.legend()
+    # plt.plot()
+
+    return data_curr
+
 
 
 def reconstruct_spectrum(f_sup, comp_range, comp_beta_gauss, comp_beta_lor, comp_beta_gen_lor, comp_beta_cos, comp_MSE, comp_bias):
