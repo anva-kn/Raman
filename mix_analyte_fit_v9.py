@@ -99,7 +99,7 @@ num_peaks=10
 
 data_mean=np.mean(data,axis=2)
 data_mean[0]=data_ace_temp
- 
+
 #------------------------------------------------------------------------------
 # Normalize data
 #------------------------------------------------------------------------------
@@ -144,45 +144,53 @@ while False:
 while False:
     plt.figure("Smoothing")
     plt.plot(data_ACE_sparse)
-    plt.plot(data_ACE_mean_smooth
+    plt.plot(data_ACE_mean_smooth)
     
 
     
-####--------------------------------------------------------------------------
-# align the spectrums, refarding of the power
+# ####--------------------------------------------------------------------------
+# # align the spectrums, refarding of the power
 
-plt.plot(data[2,:,10])
-plt.plot(data[2,:,20])
-
+# plt.plot(data[2,:,10])
+# plt.plot(data[2,:,20])
 space_mean=np.mean(data[2],axis=1)
+
 # find the area of minimum variability
-space_var=np.var(data[2],axis=1)
+# space_var=np.var(data[2],axis=1)
 
-# find the contiguous intervals in which the variance is below a certain thershold, so that 
+# # find the contiguous intervals in which the variance is below a certain thershold, so that 
 
-plt.plot(space_mean)
-plt.plot(data[2,:,10])
-plt.plot(data[2,:,20])
-plt.plot(space_var)
+# plt.plot(space_mean)
+# plt.plot(data[2,:,10])
+# plt.plot(data[2,:,20])
+# plt.plot(space_var)
 
-# minimized polyfit variance
+# # minimized polyfit variance
 
-# plt.plot(np.var(data_curr,axis=1),label='new flor')
-# plt.plot(np.var(data11,axis=1),label='old flor')
-# plt.legend()
-# plt.plot()
+# # plt.plot(np.var(data_curr,axis=1),label='new flor')
+# # plt.plot(np.var(data11,axis=1),label='old flor')
+# # plt.legend()
+# # plt.plot()
 
 
 ####-----------------------------------------------------------------------
 ####
 
-[window  , beta]=identify_fitting_win_up(f_sup,space_mean,100,gen_lor_amp,beta_init_lor)
+[window , beta]=identify_fitting_win_up(f_sup,space_mean,100,gen_lor_amp,beta_init_lor)
 
 ####
 ####-----------------------------------------------------------------------
 
 
 # compare with the previous processing
+
+plt.plot(f_sup,np.mean(data[2],axis=1))
+
+identify_fitting_win_up
+
+data11v1=data_pre_process_v1(f_sup,data[2])
+
+
 
 data11v1=data_pre_process_v1(f_sup,data[2])
 data12v1=data_pre_process_v1(f_sup,data[3])

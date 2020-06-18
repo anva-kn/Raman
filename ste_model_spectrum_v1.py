@@ -651,7 +651,7 @@ def data_pre_process(f_sup,data):
     return data_sub2
 
 
-def identify_fitting_win_up(f_sup,data_mean,slide_win,fun, init_fit_fun):
+def identify_fitting_win_up(f_sup,space_mean,slide_win,fit_fun, init_fit_fun):
     # slide the window, identify the block with small high  amplitude, fit 
     
     # loop over all windows of the data of size win 
@@ -661,33 +661,45 @@ def identify_fitting_win_up(f_sup,data_mean,slide_win,fun, init_fit_fun):
     # int the rest interpoloted the fun, fitting optimized started by init_fit_fun    
 
     # data_mean=np.mean(data[2],axis=1)
-    data_temp=data_mean.copy()
+    
     # make even
     slide_win=int(2*int(slide_win/2))
     win_small=int(slide_win/25)
 
-   
+    data_temp=space_mean.copy()
+    y_data=sci.savgol_filter(np.squeeze(data_temp), window_length = 2*int(win_small)+1, polyorder = 5)
+    x_data=f_sup
+    
     win_poly = np.empty(2*int(data_temp.size/slide_win), dtype=np.object)
     fit_gen_lor = np.empty(2*int(data_temp.size/slide_win), dtype=np.object)
-    for i in range(data.shape[0]):
-        win_poly [i] = []
-        win_poly [i].append(i)
     
+    for i in range(data.shape[0]):
+        win_poly [i] = []        
         fit_gen_lor [i] = []
-        fit_gen_lor [i].append(i)
+    
+    for i in range(int(y_data.shape[0]/slide_win)):
         
-    count=-1
-    for i in range(0,data_temp.shape[0]-slide_win,int(slide_win/2)):
-        # slide of half of the window at each time
-        count=count+1
-        y_data=data_temp[i:i+int(slide_win)-1].copy()
-        x_data=f_sup[i:i+int(slide_win)-1].copy()
+        # slide of half of the window at each time        
+        y_data_win=y_data[int(i*(slide_win/2)):int(i*(slide_win/2)+(slide_win))].copy()
+        x_data_win=x_data[int(i*(slide_win/2)):int(i*(slide_win/2)+(slide_win))].copy()
 
-        mean_level=np.mean(y_data)*np.ones(y_data.shape[0])
-                
-        # threshold for amplitude         
+
+        #--------------------------------------------------------------------
+        # start with the mean, then????
+        #
+        # check this
+        #           I update the  mean level in thethreshold calculations
+        #
+        #
+        #
+        #
+        mean_level_win=np.mean(y_data_win)*np.ones(y_data_win.shape[0])
+
+
+        
+        # threshold for amplitude
         # DIP DOWN ONLY VERSION: WE PUT NO ABSOLUTE VAUE
-        th_10=np.linspace(np.sort(y_data-mean_level)[int(win_small)],0,10)
+        th_10=np.linspace(-np.sort(-(y_data_win-mean_level_win))[int(win_small)],0,10)
     
         # total MSE of interpolation plus fitting        
         mse10=100*np.ones(th_10.shape[0])
@@ -695,14 +707,18 @@ def identify_fitting_win_up(f_sup,data_mean,slide_win,fun, init_fit_fun):
         # plt.plot(x_data,y_data)
         j_min_temp=0
         mse_min_tem=101
-        
-        
+                
         for j in range(1,th_10.shape[0]):
             
             # both high and low
             # DIP DOWN ONLY VERSION: WE PUT NO ABSOLUTE VAUE
-            pos=np.array(np.where((y_data-mean_level)<th_10[j])[0])
+            pos=np.array(np.where((y_data_win-mean_level_win)<th_10[j])[0])
             
+            if False:
+                plt.plot(x_data_win,y_data_win)
+                plt.plot(x_data_win[pos],y_data_win[pos])
+                plt.plot(x_data_win,mean_level_win)
+                
             if pos.size==0:
                 # what to do here? restart with the mean value 
                 mean_level=np.mean(y_data)
@@ -727,7 +743,7 @@ def identify_fitting_win_up(f_sup,data_mean,slide_win,fun, init_fit_fun):
                     final_lb.append(pos[0])
                     final_rb.append(pos[-1])
             else:                    
-                                
+                    # check the first jumps
                     final_lb.append(pos[0])
                     final_rb.append(pos[jumps[0]])
                     
@@ -735,28 +751,43 @@ def identify_fitting_win_up(f_sup,data_mean,slide_win,fun, init_fit_fun):
                     while k<jumps.shape[0]-1:
                         # 
                         final_lb.append(pos[jumps[k]+1])
-                        # go to the next gap                
+                        # go to the next gap    
                         k=k+1
-                        final_rb.append(pos[jumps[k]])
+                        final_rb.append(pos[jumps[k]])              
                     
+                    # check the last jump
+                    final_lb.append(pos[jumps[k]+1])
+                    final_rb.append(pos[-1]) 
             
-            # add the first and the last intervals     
+            if False: 
+                # add the first and the last intervals     
+                final_lb.insert(0,int(i*(slide_win/2)))
+                final_rb.insert(0,int(i*(slide_win/2))+win_small)
+                
+                final_lb.append(int(i*(slide_win/2)+(slide_win))-win_small)
+                final_rb.append(int(i*(slide_win/2)+(slide_win)))
+                
+            
             idx_lr=np.zeros([2,len(final_rb)])
             idx_lr[0]=np.array(final_lb)
             idx_lr[1]=np.array(final_rb)
             idx_lr.astype(int)
             idx_lr=idx_lr.T
             
-            # merge intervals 
-            # remove the one intervals
-            idx_lr=idx_lr[np.where(idx_lr[:,1]-idx_lr[:,0]>2)[0],:]        
-            
+            # merge intervals  that are to within 
             
             # minimum length of the intervals here
-            # random choice
+            # random choice            
+
+            if False:
+                idx_lr =np.array(recursive_merge(idx_lr.tolist()))
+                
+                        
+            idx_lr = np.array(idx_lr).astype(int)
+            # remove the one intervals
+            idx_lr=idx_lr[np.where(idx_lr[:,1]-idx_lr[:,0]>0)[0],:] 
             
-            merged = recursive_merge(idx_lr.tolist())
-            idx_lr = np.array(merged).astype(int)
+            
             
             #-------------------------------------------------------------------
             # Update the fitting
@@ -776,18 +807,106 @@ def identify_fitting_win_up(f_sup,data_mean,slide_win,fun, init_fit_fun):
             
                 ind_poly=np.array(ind_poly)
                 
-                mean_level=np.poly1d(np.polyfit(x_data[ind_poly],y_data[ind_poly],3))(x_data)
+                mean_level_win=np.poly1d(np.polyfit(x_data_win[ind_poly],y_data_win[ind_poly],3))(x_data_win)
                         
                 if False:
-                    plt.plot(x_data,y_data) 
-                    plt.plot(x_data,mean_level) 
-                    plt.plot(x_data[ind_poly],y_data[ind_poly],'-*')
+                    plt.plot(x_data_win,y_data_win) 
+                    plt.plot(x_data_win[pos],y_data_win[pos])                    
+                    plt.plot(x_data_win,mean_level_win)  
+                    plt.plot(x_data_win[ind_poly],y_data_win[ind_poly],'-*')
+                    
+                
                     
                 
             #----------------------------------
-            # fit the function we have in input
+            # fit the function that we have in input            
             #----------------------------------
+
+            # first obtain the complement of the intervals
+            
+            if idx_lr.size==0:
+                # idx_lr_comp=np.array(range(i,i+int(slide_win)-1))
+                idx_lr_comp=np.array([0,slide_win-1])
+                idx_lr_comp=idx_lr_comp.reshape([1,2])
+            else:
+                idx_lr_comp=[] 
+                
+                # include the first interval?
+                if  idx_lr[0,0]>0:
+                    idx_lr_comp.append([0,idx_lr[0,0]])
+            
+                for k in range(1,idx_lr.shape[0]):
+                    idx_lr_comp.append([idx_lr[k-1,1],idx_lr[k,0]])
+                
+                # include the last interval
+                if  idx_lr[-1,1]<int(slide_win)-1:
+                    idx_lr_comp.append([idx_lr[-1,1],int(slide_win)])
                         
+                    
+                        
+                    
+            range_comp = []
+            beta_comp = []
+            MSU_comp = []
+            
+            for k in range(idx_lr_comp.shape[0]):
+                
+                    
+                
+                
+                
+                
+            
+                    
+                    
+                    
+                    
+                    
+            # -----------------------------------------------        
+                    
+                    
+                    
+                    
+                    
+            idx_lr_comp=np.array(idx_lr_comp)        
+            MSE_sub=np.zeros(idx_lr_comp.shape[0])
+            
+            range_up_comp = np.empty(idx_lr_comp.shape[0], dtype=np.object)
+            beta_up_comp = np.empty(idx_lr_comp.shape[0], dtype=np.object)
+            
+            range_down_comp = np.empty(idx_lr_comp.shape[0], dtype=np.object)
+            beta_down_comp = np.empty(idx_lr_comp.shape[0], dtype=np.object)
+            
+            for k in range(idx_lr_comp.shape[0]):
+                range_up_comp [k] = []
+                beta_up_comp [k] = []
+                range_down_comp [i] = []
+                beta_down_comp [i] = []
+        
+            for k in range(idx_lr_comp.shape[0]):    
+                ind_poly_comp=np.array(range(idx_lr_comp[k,0].astype(int),idx_lr_comp[k,1].astype(int)))
+                x_sub_win = x_data_win[ind_poly_comp]
+                y_sub_win = y_data_win[ind_poly_comp]
+                
+                # HOW DO WE CHOOSE HERE?
+                # Let's pick the one with the largest variance
+                mean_level_sub=np.zeros([4,y_sub_win.shape[0]])
+                mean_level_sub[0]= mean_level[ind_poly_comp]                           
+                mean_level_sub[1]=np.poly1d(np.polyfit(x_sub_win,y_sub_win,2))(x_sub_win)
+                mean_level_sub[2]=np.poly1d(np.polyfit(x_sub_win,y_sub_win,1))(x_sub_win)
+                mean_level_sub[3]=np.mean(y_sub_win)*np.ones(y_sub_win.shape[0])
+                              
+                
+                if False:
+                    plt.plot(x_sub_win,y_sub_win)
+                    plt.plot(x_sub_win,mean_level_sub.T)
+                
+                
+                # is this correct!?
+                mean_level_sub=mean_level_sub[np.argmax(np.var(y_sub_win-mean_level_sub,axis=1))]
+                
+                
+                
             # find the complement of the position
             
             #----------------------------------
@@ -818,227 +937,219 @@ def identify_fitting_win_up(f_sup,data_mean,slide_win,fun, init_fit_fun):
             
             
             
-            #----------------------------------
-            # PUT ANY FUNCTION HERE
-            #----------------------------------
+            # RECURSIVE MERGE STARTS HERE                
+            #--------------------------------------------------------------
+                                  
                         
-            for k in range(idx_lr_comp.shape[0]):    
-                ind_poly_comp=np.array(range(idx_lr_comp[k,0].astype(int),idx_lr_comp[k,1].astype(int)))
-                beta_init_lor=init_lor(x_data[ind_poly_comp],data_mean[ind_poly_comp])
-                result = minimize(mse_loss, beta_init_lor, args=(x_data[ind_poly_comp],data_mean[ind_poly_comp],gen_lor_amp), method='Nelder-Mead', tol=1e-12)        
-                beta_hat_gen_lor[k]=result.x    
-                MSE_gen_lor[k]=result.fun
-                            
-            #----------------------------------
-            # look at the overall MSE
-            #----------------------------------
-            
-            mse10[j]=np.var(data_mean[ind_poly]-mean_level[ind_poly])/np.size(ind_poly)+np.sum(MSE_gen_lor)
-            
-                
-            if mse_min_tem>mse10[j]:
-               mse_min_tem=mse10[j] 
-               win_poly[count] = idx_lr_comp
-               fit_gen_lor[count] = beta_hat_gen_lor
-               # store the everything 
-               
                         
     return    [win_poly,fit_gen_lor]
         
-            
-def data_pre_process_v1(f_sup,data_temp):
-    
-    res=data_temp.shape[0]
 
-    f_sup_temp=f_sup.copy()
-    idx_temp=range(f_sup.shape[0])
-    #data_temp=data[2]
-    data_mean=np.mean(data_temp,axis=1)
-    data_temp_mean=np.mean(data_temp,axis=1)
-    
-    # what's the interva we want to cover?
-    fit_th=0.8
-    
-    #while len_temp<fit_th*f_sup.shape[0]:
-    th_hist=np.zeros(10)
-    
-    for i0 in range(10):
-       
-        poly_min=np.poly1d(np.polyfit(f_sup_temp,data_temp_mean,3))(f_sup_temp)
-        poly_min_pos=poly_min+min(data_temp_mean-poly_min)
-        
-        beta_init=np.polyfit(f_sup_temp,data_temp_mean,4)
-        beta_init[4]=beta_init[4]+min(data_temp_mean-poly_min)
-            
-        #result = minimize(mse_loss, beta_init, args=(f_sup_temp,data_temp_mean,poly4), method='Nelder-Mead', tol=1e-12)
-        result = minimize(reg_pos_mse_loss, beta_init, args=(f_sup_temp,data_temp_mean,poly4), method='Nelder-Mead', tol=1e-12)
-        # look at the variance between the estimated florescence and the data, pick the interval in which this 
-        # variance is below somethig
-        
-        
-        beta_hat = result.x                 
-            
-        #est_clean=np.subtract(data_temp[idx_temp],est_flor.reshape([est_flor.shape[0],1]))
-        
-        est_flor=poly4(f_sup,beta_hat)
-        
-        est_clean=np.subtract(data_temp,est_flor.reshape([est_flor.shape[0],1]))
-        
-        # normalize variance
-        est_var=np.var(est_clean,axis=1)/np.var(est_clean)
-        
-        # find the portion of the data (original) in whi
-        th=min(est_var)
-        len_temp=0
-        
-        while len_temp<fit_th*f_sup.shape[0]:
-                    
-            pos=[]
-            
-            while len(pos)==0:
-                pos=np.array(np.where(est_var<th)[0])        
-                th=th*1.1
-                    
-            diff_pos=pos[1:]-pos[:-1]-1    
-            jumps=np.where(diff_pos>0)[0]
-            
-            #if the final element is res, the add a jomp an the end
-            if pos[-1]==res-1:
-                jumps=np.append(jumps,pos.shape[0]-1)
-            
-            final_lb=[]
-            final_rb=[]        
-                        
-            final_lb.append(pos[0])
-            final_rb.append(pos[jumps[0]])
-            
-            i=0
-            while i<jumps.shape[0]-1:
-                # 
-                final_lb.append(pos[jumps[i]+1])
-                # go to the next gap                
-                i=i+1
-                final_rb.append(pos[jumps[i]])
-            
-            # add the first and the last intervals 
-            win_tail=int(fit_th*f_sup.shape[0]/10)
-            final_lb.insert(0,0)
-            final_rb.insert(0,win_tail)
-            
-            final_lb.append(res-win_tail-1)
-            final_rb.append(res-1)
-                            
-            idx_lr=np.zeros([2,len(final_rb)])
-            idx_lr[0]=np.array(final_lb)
-            idx_lr[1]=np.array(final_rb)
-            idx_lr.astype(int)
-            idx_lr=idx_lr.T
-            
-            # merge intervals 
-            # remove the one intervals
-            idx_lr=idx_lr[np.where(idx_lr[:,1]-idx_lr[:,0]>2)[0],:]        
-    
-            merged = recursive_merge(idx_lr.tolist())
-            idx_lr = np.array(merged).astype(int)
-                                
-            # min length of the intervals here
-            win=win_tail/2
-            idx_lr=idx_lr[np.where(idx_lr[:,1]-idx_lr[:,0]>win)[0],:]
-                
-            len_temp=np.sum(idx_lr[:,1]-idx_lr[:,0])
-            th=th*1.1   
-            
-        # update  the fitting support
-                
-        # leh's see the final fitting
-    
-            ind_wb=[]
-            
-            # check the positions
-                
-            for i in range(idx_lr.shape[0]):
-                left=int(idx_lr[i,0])
-                right=int(idx_lr[i,1])+1    
-                ind_wb=ind_wb+list(range(left,right))    
-                
-            ind_wb=ind_wb+list(range(left,right))    
-            ind_wb=np.array(ind_wb)    
-        
-            f_sup_temp =  f_sup[ind_wb]
-            data_temp_mean =  data_mean[ind_wb]
-    
-    
-    
-        th_hist[i0]=th
-        # reduce the fitting threshould
-        fit_th=fit_th*0.95
-            
-    #######
-    ##
-    ## add the beginnig and the end to the interval, so we don't go all the way off!!!
+# FIT DOWN IS STILL A POSITIVE DEFINED FUNCTION!
+
+def recursive_merge_up(x_sub_win, y_sub_win,mean_level_sub, thr_sub, range_up, beta_up, fit_fun_up, init_fit_fun_up)
+
+    # fit UP            
+    #----------------------------------               
      
+    y_up_sub=np.max([y_sub_win-mean_level_sub,np.zeros(y_sub_win.shape[0])],axis=0)
+    y_up_sub=sci.savgol_filter(y_up_sub, window_length = 11, polyorder = 5)       
+
+    # IMPORTANT PARAMETER HERE
+    # let's ask for the prominence to be at lesat twice the threshold
+    
+    prom= 3*thr_sub
+    peaks, properties = sci.find_peaks(y_up_sub,prominence=prom)     
+                  
+    prominences = properties['prominences']    
+    peak_width = properties['right_bases']-properties['left_bases']
+    l_ips = properties['left_bases'].astype(int)
+    r_ips = properties['right_bases'].astype(int)
+    l_ips.astype(int)
+    r_ips.astype(int)
+    
+    
+    peak_l_r_final=[]
+    
+    peak_l_r_win=np.zeros([peaks.size,2])
+    
+    for i in range(peaks.size):
+        #[l_win, r_win]=find_cos_win_supp(peaks[i],l_ips[i],r_ips[i], mean_level, y_data,2)
+        [l_win, r_win]=find_win_supp(peaks[i],l_ips[i],r_ips[i], y_up_sub,3)
+        peak_l_r_win[i]=[l_win, r_win]
+
+    # merge intervals                       
+    peak_l_r_win = np.array(recursive_merge(peak_l_r_win.tolist())).astype(int)
+    
+    peak_l_r_final.append(list(peak_l_r_win))
+    
+    # check fitting
     if False:
-    #if True:
-        plt.plot(est_flor,label='est. flor. ')
-        plt.plot(data_mean, label='mean values')
-        plt.plot(np.mean(est_clean,axis=1),label='est mean values')
-        #plt.plot(est_var,label='variance estiamte')
-        plt.plot(ind_wb,data_mean[ind_wb],'*',label='good variance')
-        plt.plot(ind_wb,  data_temp_mean,'*',label='my interval')
-        plt.legend()
-        plt.show
+        plt.plot(x_sub_win,y_sub_win)
+        plt.plot(x_sub_win,y_up_sub+mean_level_sub)
+        plt.plot(x_sub_win,(thr_sub+mean_level_sub)*np.ones(x_sub_win.shape[0]))
+    
+        for i in range(peaks.size):
+            #plt.plot(x_data[l_ips[i]:r_ips[i]],y_data[l_ips[i]:r_ips[i]])
+            plt.plot(x_sub_win[int(peak_l_r_win[i,0]):int(peak_l_r_win[i,1])],y_sub_win[int(peak_l_r_win[i,0]):int(peak_l_r_win[i,1])],'*r')
+        plt.show()            
     
     
-    # find the best scaling of the florescence to remove from each spectrum
+    beta_hat_fit=np.empty((peak_l_r_win.shape[0],),dtype=object)
     
-    # var_additive=np.dot(est_flor,data_temp.reshape(res,dim_s))
-    sub=np.outer(est_flor,np.dot(est_flor,data_temp)/var_additive)
-    
-    data_curr=data_temp-sub
+    # fit each window up, fit then append to the range_up, beta_up, 
+    for i in range(peak_l_r_win.shape[0]):
+        idx_temp=range(int(peak_l_r_win[i,0]),int(peak_l_r_win[i,1]))
+        
+        x_data_temp = x_sub_win[idx_temp]
+        y_data_temp = y_up_sub[idx_temp]
+        mean_level_temp = mean_level_sub[idx_temp]
+        
+        # init_fit_fun_up=init_cos3
+        # fit_fun_up=cos_win2        
+        
+        # fit_fun_up, init_fit_fun_up,
+        beta_init=init_fit_fun_up(x_data_temp,y_data_temp,mean_level_temp)
+        
+        #----------------------------------------------------------------------
+        # how do we deal with this in general?
+        #----------------------------------------------------------------------
+        
+        bounds_cos2_vec=np.array([np.zeros(6) , np.inf*np.ones(6)]).T    
+        bounds_cos2=tuple(map(tuple,bounds_cos2_vec))
             
-    
-    # plt.plot(np.mean(data_curr,axis=1),label='new flor')
-    
-    # data11=data_pre_process(f_sup,data[2])
-    # data11=data11.reshape([res,dim_s])
-    
-    # plt.plot(np.mean(data11-data_curr,axis=1))
-    
-    # plt.plot(np.mean(data11,axis=1),label='old flor')
-    # plt.legend()
-    # plt.plot()
-
-    return data_curr
-
-
-
-def reconstruct_spectrum(f_sup, comp_range, comp_beta_gauss, comp_beta_lor, comp_beta_gen_lor, comp_beta_cos, comp_MSE, comp_bias):
-    
-    res=f_sup.shape[0]
-    data_hat=np.zeros(res)
-    
-    count=np.zeros(4)
-    
-    for i in range(int(comp_range.shape[0])):
-        
-        min_MSE_pos=int(np.argmin(comp_MSE[i,:]))
-        l_win=int(comp_range[i,0])
-        r_win=int(comp_range[i,1])
-        x_data = f_sup[l_win:r_win]
-        
-        # gaus
-        # lor 
-        # gen_lor
-        # cos
-        count[min_MSE_pos]=count[min_MSE_pos]+1
-        
-        if    min_MSE_pos==0:     
-            data_hat[l_win:r_win]=comp_bias[i]+gauss_amp(x_data,comp_beta_gauss[i])           
-        elif  min_MSE_pos==1:
-            data_hat[l_win:r_win]=comp_bias[i]+lor_amp(x_data,comp_beta_lor[i])           
-        elif  min_MSE_pos==2:
-            data_hat[l_win:r_win]=comp_bias[i]+gen_lor_amp(x_data,comp_beta_gen_lor[i])           
-        else:
-            data_hat[l_win:r_win]=comp_bias[i]+cos_win2(x_data,comp_beta_cos[i])       
+        result = minimize(mse_loss,beta_init, args=(x_data_temp,y_data_temp,fit_fun_up), tol=1e-12,bounds=bounds_cos2)    
+        beta_hat_fit[i]=result.x
             
-    return data_hat
+        if False:
+            plt.plot(x_data_temp,y_data_temp+mean_level_temp)            
+            plt.plot(x_data_temp,mean_level_temp)
+            plt.plot(x_data_temp,fit_fun_up(x_data_temp,beta_hat_fit[i])+mean_level_temp)
+        
+        
+    # append: need anything else before appending?         
+    range_up.append(peak_l_r_win)
+    beta_up.append(beta_hat_fit)
+    
+    # fit down
+    #----------------------------------               
+    
+    y_down_sub=np.max([-y_sub_win+mean_level_sub,np.zeros(y_sub_win.shape[0])],axis=0)
+    y_down_sub=sci.savgol_filter(y_down_sub, window_length = 11, polyorder = 5)       
+    
+    prom= 3*thr_sub
+    peaks, properties = sci.find_peaks(y_down_sub,prominence=prom)     
+                  
+    prominences = properties['prominences']    
+    peak_width = properties['right_bases']-properties['left_bases']
+    l_ips = properties['left_bases'].astype(int)
+    r_ips = properties['right_bases'].astype(int)
+    l_ips.astype(int)
+    r_ips.astype(int)
+    
+    peak_l_r_win=np.zeros([peaks.size,2])
+    
+    for i in range(peaks.size):        
+        [l_win, r_win]=find_win_supp(peaks[i],l_ips[i],r_ips[i], y_down_sub,3)
+        peak_l_r_win[i]=[l_win, r_win]
+                
+    # merge intervals                       
+    peak_l_r_win = np.array(recursive_merge(peak_l_r_win.tolist())).astype(int)
+    
+    peak_l_r_final.append(list(peak_l_r_win)) 
+    
+    # check fitting
+    if False:
+        # plt.plot(x_sub_win,y_sub_win)
+        plt.plot(x_sub_win,y_down_sub+mean_level_sub)
+        # plt.plot(x_sub_win,mean_level_sub)
+        plt.plot(x_sub_win,(thr_sub+mean_level_sub)*np.ones(x_sub_win.shape[0]))
+    
+        for i in range(peaks.size):
+            #plt.plot(x_data[l_ips[i]:r_ips[i]],y_data[l_ips[i]:r_ips[i]])
+            plt.plot(x_sub_win[int(peak_l_r_win[i,0]):int(peak_l_r_win[i,1])],y_down_sub[int(peak_l_r_win[i,0]):int(peak_l_r_win[i,1])] ,'*r')
+        plt.show()            
+
+    
+    beta_hat_fit=np.empty((peak_l_r_win.shape[0],),dtype=object)
+    
+    # fit each window down, fit then append to the range_up, beta_up, 
+    
+    for i in range(peak_l_r_win.shape[0]):
+        idx_temp=range(int(peak_l_r_win[i,0]),int(peak_l_r_win[i,1]))
+        
+        x_data_temp = x_sub_win[idx_temp]
+        y_data_temp = y_up_sub[idx_temp]
+        mean_level_temp = mean_level_sub[idx_temp]
+        
+        # init_fit_fun_down=init_cos3
+        # fit_fun_down=cos_win2        
+        
+        # fit_fun_up, init_fit_fun_up,
+        beta_init=init_fit_fun_down(x_data_temp,y_data_temp,mean_level_temp)
+        
+        #----------------------------------------------------------------------
+        # how do we deal with this in general? bounds on the fitting function?
+        #----------------------------------------------------------------------
+        
+        bounds_cos2_vec=np.array([np.zeros(6) , np.inf*np.ones(6)]).T    
+        bounds_cos2=tuple(map(tuple,bounds_cos2_vec))
+            
+        result = minimize(mse_loss,beta_init, args=(x_data_temp,y_data_temp,fit_fun_down), tol=1e-12,bounds=bounds_cos2)    
+        beta_hat_fit[i]=result.x
+            
+        if False:
+            plt.plot(x_data_temp,y_data_temp+mean_level_temp)            
+            plt.plot(x_data_temp,mean_level_temp)
+            plt.plot(x_data_temp,fit_fun_up(x_data_temp,beta_hat_fit[i])+mean_level_temp)
+        
+        
+    # append: need anything else before appending?         
+    range_down.append(peak_l_r_win)
+    beta_down.append(beta_hat_fit)
+        
+    # now figure out the complementary intervarls and call the function recursively
+    # just avoid those indexes where we are below the thershold    
+        
+        
+    # find the complementary intervas
+    idx_lr=np.array(peak_l_r_final).reshape(int(size(peak_l_r_final)/2),2)
+    
+    slide_win=x_sub_win.shape[0]
+    
+    if idx_lr.size==0:
+        # idx_lr_comp=np.array(range(i,i+int(slide_win)-1))
+        idx_lr_comp=np.array([0,slide_win-1])
+        idx_lr_comp=idx_lr_comp.reshape([1,2])
+    else:
+        idx_lr_comp=[] 
+        
+        # include the first interval?
+        if  idx_lr[0,0]>0:
+            idx_lr_comp.append([0,idx_lr[0,0]])
+    
+        for k in range(1,idx_lr.shape[0]-1):
+            idx_lr_comp.append([idx_lr[k-1,1],idx_lr[k,0]])
+        
+        # include the last interval
+        if  idx_lr[-1,1]<int(slide_win)-1:
+            idx_lr_comp.append([idx_lr[-1,1],int(slide_win)])
+                
+            
+    idx_lr_comp=np.array(idx_lr_comp)     
+    
+    for i in range(idx_lr_comp.shape[0]):
+        x_rec
+        y_rec
+        mean_rec
+        
+        [mse_rec range_up_rec, beta_up_rec, range_down_rec, beta_down_rec ] = recursive_merge_up_down(x_rec, y_rec,mean_rec, thr_sub, range_up, beta_up, range_down, beta_down, fit_fun_up, init_fit_fun_up,fit_fun_down, init_fit_fun_down)
+        
+        mse_up.append(mse_up)
+        range_up.append(range_up_rec)
+        beta_up.append(beta_up_rec)
+        range_down.append(range_down_rec) 
+        beta_down.append(beta_down_rec)
+        
+    return [mse_up range_up,beta_up,range_down,beta_down]
+        
