@@ -13,7 +13,7 @@ from math import pi
 
 #import ste_model_spectrum.py
 
-from ste_model_spectrum import *
+from ste_model_spectrum_v2 import *
 
 res=964
 dim_s=100
@@ -29,6 +29,9 @@ for key in my_shelf:
 my_shelf.close()
 
 
+space_mean=np.mean(data[2],axis=1)            
+[window , beta]=identify_fitting_win_up(f_sup,space_mean,100,gen_lor_amp,init_lor)
+
 #------------------------------------------------------------------------------
 # import the clean ACE spectrum
 
@@ -38,7 +41,6 @@ temp=[i.strip('\n') for i in temp]
 dataACE=np.array([(row.split('\t')) for row in temp], dtype=np.float32)
 f_ACE=dataACE[:,0]
 dataACE=dataACE[:,1]
-dataACE
 
 #------------------------------------------------------------------------------
 f_sup=f_sup[:-1]
@@ -153,7 +155,7 @@ while False:
 
 # plt.plot(data[2,:,10])
 # plt.plot(data[2,:,20])
-space_mean=np.mean(data[2],axis=1)
+
 
 # find the area of minimum variability
 # space_var=np.var(data[2],axis=1)
@@ -176,7 +178,13 @@ space_mean=np.mean(data[2],axis=1)
 ####-----------------------------------------------------------------------
 ####
 
-[window , beta]=identify_fitting_win_up(f_sup,space_mean,100,gen_lor_amp,beta_init_lor)
+
+#------------------------
+# init_fit_fun = init_lor
+# fit_fun = gen_lor_amp            
+
+space_mean=np.mean(data[2],axis=1)            
+[window , beta]=identify_fitting_win_up(f_sup,space_mean,100,gen_lor_amp,init_lor)
 
 ####
 ####-----------------------------------------------------------------------

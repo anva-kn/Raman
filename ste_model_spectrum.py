@@ -669,7 +669,7 @@ def identify_fitting_win_up(f_sup,data_mean,slide_win,fun, init_fit_fun):
    
     win_poly = np.empty(2*int(data_temp.size/slide_win), dtype=np.object)
     fit_gen_lor = np.empty(2*int(data_temp.size/slide_win), dtype=np.object)
-    for i in range(data.shape[0]):
+    for i in range(data_mean.shape[0]):
         win_poly [i] = []
         win_poly [i].append(i)
     
