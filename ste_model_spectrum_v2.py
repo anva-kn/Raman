@@ -948,6 +948,7 @@ def identify_fitting_win_up(f_sup,space_mean,slide_win=100,fit_fun=gen_lor_amp, 
                 if  idx_lr[-1,1]<int(slide_win)-1:
                     idx_lr_comp.append([idx_lr[-1,1],int(slide_win)])
                         
+                    
             idx_lr_comp=np.array(idx_lr_comp).reshape(int(size(idx_lr_comp)/2),2)
             
             # remove the intervals that are shorter than the number of parameters, 
@@ -957,7 +958,7 @@ def identify_fitting_win_up(f_sup,space_mean,slide_win=100,fit_fun=gen_lor_amp, 
             mse_comp = []
             range_comp = []
             beta_comp = []
-    
+            
             idx_lr_comp=np.array(idx_lr_comp[np.where(idx_lr_comp[:,1]-idx_lr_comp[:,0]>6)[0],:])
             
             if idx_lr_comp.size>0:
@@ -984,11 +985,21 @@ def identify_fitting_win_up(f_sup,space_mean,slide_win=100,fit_fun=gen_lor_amp, 
                     min_j=j
                 
                 if False :
-                print('mse_th',mse_th)
-                plt.figure("Thershold"+str(int(j)))
-                plt.plot(x_data_win,y_data_win)
-                plt.plot(x_data_win,mean_level_win)
-                
+                    print('mse_th',mse_th)
+                    plt.figure("Thershold"+str(int(j)))
+                    plt.plot(x_data_win,y_data_win)
+                    plt.plot(x_data_win,mean_level_win)
+                    
+                    range_a=np.array(range_comp).reshape(int(size(range_comp)/2),2)
+                    beta_a=np.zeros([range_a.shape[0],4])
+                    
+                    for k in range(range_a.shape[0]):                        
+                        beta_a[k,:]=np.array(beta_comp[k][0])
+                        
+                    for k in range(range_a.shape[0]):
+                        idx=np.array(range(range_a[k,0],range_a[k,1]))
+                        plt.plot(x_data_win[idx],fit_fun(idx,beta_a[k,:])+mean_level_win[idx])
+                    
             # store everything
             
             fitting_data[i,j]=[idx_lr_poly, mse_comp, range_comp, beta_comp]
@@ -1015,8 +1026,6 @@ def identify_fitting_win_up(f_sup,space_mean,slide_win=100,fit_fun=gen_lor_amp, 
     return    [MSE_comp, range_comp_rec, beta_comp_rec ]
 
 
-
-
 def recursive_merge_up(x_sub_win, y_sub_win,mean_level_sub, thr_sub, mse_up, range_up, beta_up, fit_fun, init_fit_fun):
     
         # x_sub_win = x_rec  
@@ -1028,7 +1037,7 @@ def recursive_merge_up(x_sub_win, y_sub_win,mean_level_sub, thr_sub, mse_up, ran
         # init_fit_fun = init_lor
         #
         # fit_fun = cos_win2
-        # init_fit_fun = init_cos3
+        # init_fit_fun = init_cos
         
         
         # fit UP            
