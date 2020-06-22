@@ -11,7 +11,7 @@ from scipy.signal import hilbert, find_peaks
 import pylab as p
 import scipy.signal as sci
 import scipy.stats as stats
-import pymf3
+#import pymf3
 from scipy.optimize import minimize
 from scipy.optimize import curve_fit
 import math
@@ -672,6 +672,7 @@ def find_win_supp(peak,l_pos,r_pos, y_up):
     # l_pos=l_ips[i]
     # r_pos=r_ips[i]
     # th_win=10
+    # y_up=y_up_sub
     
     res=y_up.shape[0]
     
@@ -686,22 +687,22 @@ def find_win_supp(peak,l_pos,r_pos, y_up):
     
     
     # go left first 
-    l_pos_temp=Y_max_idx-1
+    l_pos_temp=peak-1
     
     # win_left=np.mean(Y_smooth[l_pos_temp-th_win:l_pos_temp-1])
     win_left=np.mean(Y_smooth[l_pos:l_pos_temp-1])
             
     while win_left<=Y_smooth[l_pos_temp]  and  y_up[l_pos_temp-1]>0  and l_pos_temp>0:        
         l_pos_temp=l_pos_temp-1
-        win_left=np.mean(Y_smooth[l_pos:l_pos_temp-1])
+        win_left=np.mean(Y_smooth[l_pos:l_pos_temp])
     
     # then go right
-    r_pos_temp=Y_max_idx+1
+    r_pos_temp=peak+1
     win_right=np.mean(Y_smooth[r_pos_temp+1: ])
     
     while  win_right<=Y_smooth[r_pos_temp] and y_up[r_pos_temp+1]>0 and r_pos_temp<res-1:     
         r_pos_temp=r_pos_temp+1
-        win_right=np.mean(Y_smooth[r_pos_temp+1:r_pos])
+        win_right=np.mean(Y_smooth[r_pos_temp:r_pos])
         
         
     if False:
@@ -900,7 +901,7 @@ def identify_fitting_win_up(f_sup,space_mean,slide_win=100,fit_fun=gen_lor_amp, 
             #-------------------------------------------------------------------
             # Update the fitting
             #-------------------------------------------------------------------
-                
+
             if idx_lr.size==0:
                 # weird case when the whole interval is to be fittened
                 # mean_level=np.zeros(x_data.shape)
@@ -949,7 +950,7 @@ def identify_fitting_win_up(f_sup,space_mean,slide_win=100,fit_fun=gen_lor_amp, 
                     idx_lr_comp.append([idx_lr[-1,1],int(slide_win)])
                         
                     
-            idx_lr_comp=np.array(idx_lr_comp).reshape(int(size(idx_lr_comp)/2),2)
+            idx_lr_comp=np.array(idx_lr_comp).reshape(int(np.size(idx_lr_comp)/2),2)
             
             # remove the intervals that are shorter than the number of parameters, 
             # which is SIX
@@ -963,8 +964,13 @@ def identify_fitting_win_up(f_sup,space_mean,slide_win=100,fit_fun=gen_lor_amp, 
             
             if idx_lr_comp.size>0:
                 for k in range(idx_lr_comp.shape[0]):
-                    idx_comp = range(idx_lr_comp[k,0],idx_lr_comp[k,1])
-                    #x_rec = x_data_win[idx_comp]
+                    # expand the fitting of half window
+                    left=idx_lr_comp[k,0]
+                    right=idx_lr_comp[k,1]
+                    win_len=right-left
+                    idx_comp = range( max([0,int(left-win_len/2)]),min([slide_win-1,int(right+win_len/2)]))
+                    #idx_comp = range(idx_lr_comp[k,0],idx_lr_comp[k,1])
+                    
                     x_rec = np.array(idx_comp)
                     y_rec = y_data_win[idx_comp]
                     mean_rec =  mean_level_win[idx_comp]
@@ -984,26 +990,32 @@ def identify_fitting_win_up(f_sup,space_mean,slide_win=100,fit_fun=gen_lor_amp, 
                     min_mse_th = mse_th + mse_poly
                     min_j=j
                 
+                # reshape list
+                range_p=[]
+                beta_p=[]
+                for k in range(len(range_comp)):
+                    temp=range_comp[k]
+                    temp_be=beta_comp[k]
+                    for l in range(temp.shape[0]):
+                        range_p.append(temp[l])
+                        beta_p.append(temp_be[l])
+                
+                range_p=np.array(range_p)
+                beta_p=np.array(beta_p)
+                
                 if False :
                     print('mse_th',mse_th)
                     plt.figure("Thershold"+str(int(j)))
                     plt.plot(x_data_win,y_data_win)
                     plt.plot(x_data_win,mean_level_win)
                     
-                    range_a=np.array(range_comp).reshape(int(size(range_comp)/2),2)
-                    beta_a=np.zeros([range_a.shape[0],4])
-                    
-                    for k in range(range_a.shape[0]):                        
-                        beta_a[k,:]=np.array(beta_comp[k][0])
-                        
-                    for k in range(range_a.shape[0]):
-                        idx=np.array(range(range_a[k,0],range_a[k,1]))
-                        plt.plot(x_data_win[idx],fit_fun(idx,beta_a[k,:])+mean_level_win[idx])
+                    for k in range(range_p.shape[0]):
+                        idx=np.array(range(range_p[k,0],range_p[k,1]))
+                        plt.plot(x_data_win[idx],fit_fun(idx,beta_p[k])+mean_level_win[idx])
                     
             # store everything
             
             fitting_data[i,j]=[idx_lr_poly, mse_comp, range_comp, beta_comp]
-            
             
             # recap plot at the threshold level
             
@@ -1026,7 +1038,7 @@ def identify_fitting_win_up(f_sup,space_mean,slide_win=100,fit_fun=gen_lor_amp, 
     return    [MSE_comp, range_comp_rec, beta_comp_rec ]
 
 
-def recursive_merge_up(x_sub_win, y_sub_win,mean_level_sub, thr_sub, mse_up, range_up, beta_up, fit_fun, init_fit_fun):
+def recursive_merge_up(x_sub_win, y_sub_win, mean_level_sub, thr_sub, mse_up, range_up, beta_up, fit_fun, init_fit_fun):
     
         # x_sub_win = x_rec  
         # y_sub_win = y_rec
@@ -1038,18 +1050,27 @@ def recursive_merge_up(x_sub_win, y_sub_win,mean_level_sub, thr_sub, mse_up, ran
         #
         # fit_fun = cos_win2
         # init_fit_fun = init_cos
-        
-        
+                
         # fit UP            
         #----------------------------------               
-        y_bias=y_sub_win-mean_level_sub
+        if False:
+            plt.plot(x_sub_win, y_sub_win)
+            plt.plot(x_sub_win, mean_level_sub)
+            
+        y_up_sub=np.max([y_sub_win-mean_level_sub,np.zeros(y_sub_win.shape[0])],axis=0)
         
-        y_up_sub=np.max([y_bias-np.mean(y_bias),np.zeros(y_sub_win.shape[0])],axis=0)
-    
+        
+        if y_up_sub.size==0:
+            return
+        # how to write this correctly?
+        # y_bias=y_sub_win-mean_level_sub
+        #
+        # y_up_sub=np.mean(y_bias)+np.max([y_bias-np.mean(y_bias),np.zeros(y_sub_win.shape[0])],axis=0)
+        
         # IMPORTANT PARAMETER HERE
         # let's ask for the prominence to be at lesat twice the threshold
         
-        prom= max([3*thr_sub,min(y_up_sub[np.where(y_up_sub>0)])])
+        prom= max([3*thr_sub,np.min(y_up_sub[np.where(y_up_sub>0)])])
         peaks, properties = sci.find_peaks(y_up_sub,prominence=prom)     
         
         count=0
@@ -1063,7 +1084,7 @@ def recursive_merge_up(x_sub_win, y_sub_win,mean_level_sub, thr_sub, mse_up, ran
         
         if peaks.size==0:
             return
-             
+                
         prominences = properties['prominences']    
         peak_width = properties['right_bases']-properties['left_bases']
         l_ips = properties['left_bases'].astype(int)
@@ -1075,9 +1096,13 @@ def recursive_merge_up(x_sub_win, y_sub_win,mean_level_sub, thr_sub, mse_up, ran
         
         peak_l_r_win=np.zeros([peaks.size,2])
         
+        # this is too tricky to implement atm         
         for i in range(peaks.size):     
             [l_win, r_win]=find_win_supp(peaks[i],l_ips[i],r_ips[i], y_up_sub)
             peak_l_r_win[i]=[l_win, r_win]
+    
+        # for i in range(peaks.size):                 
+        #     peak_l_r_win[i]=[l_ips[i], r_ips[i]]
     
         # merge intervals                       
         peak_l_r_win = np.array(recursive_merge(peak_l_r_win.tolist())).astype(int)
@@ -1087,15 +1112,15 @@ def recursive_merge_up(x_sub_win, y_sub_win,mean_level_sub, thr_sub, mse_up, ran
         # check fitting
         if False:
             plt.plot(x_sub_win,y_sub_win)
+            plt.plot(x_sub_win,mean_level_sub)
             plt.plot(x_sub_win,y_up_sub+mean_level_sub)
-            plt.plot(x_sub_win,(thr_sub+mean_level_sub)*np.ones(x_sub_win.shape[0]))
+            #plt.plot(x_sub_win,(thr_sub+mean_level_sub)*np.ones(x_sub_win.shape[0]))
         
             for i in range(peaks.size):
                 #plt.plot(x_data[l_ips[i]:r_ips[i]],y_data[l_ips[i]:r_ips[i]])
                 plt.plot(x_sub_win[int(peak_l_r_win[i,0]):int(peak_l_r_win[i,1])],y_sub_win[int(peak_l_r_win[i,0]):int(peak_l_r_win[i,1])],'*r')
             plt.show()            
-        
-        
+            
         beta_hat_fit=np.empty((peak_l_r_win.shape[0],),dtype=object)
         mse_fit=np.empty((peak_l_r_win.shape[0],),dtype=object)
         
@@ -1182,10 +1207,12 @@ def recursive_merge_up(x_sub_win, y_sub_win,mean_level_sub, thr_sub, mse_up, ran
         idx_lr_comp=np.array(idx_lr_comp)     
             
         # remove the intervals that are shorter than the number of parameters, 
-        # which is SIX
+        # which is SIX (it's actually FOUR for gen_lor, but whatever)
+        if idx_lr_comp.size>0:
+            idx_lr_comp=np.array(idx_lr_comp[np.where(idx_lr_comp[:,1]-idx_lr_comp[:,0]>6)[0],:])
+        else:
+            return 
         
-        idx_lr_comp=np.array(idx_lr_comp[np.where(idx_lr_comp[:,1]-idx_lr_comp[:,0]>6)[0],:])
-    
         if idx_lr_comp.size>0:
             
             # mse_up_rec  = []
@@ -1198,7 +1225,12 @@ def recursive_merge_up(x_sub_win, y_sub_win,mean_level_sub, thr_sub, mse_up, ran
                     
             
             for k in range(idx_lr_comp.shape[0]):
-                idx_comp = range(idx_lr_comp[k,0],idx_lr_comp[k,1])
+                left=idx_lr_comp[k,0]
+                right=idx_lr_comp[k,1]
+                win_len=right-left
+                idx_comp = range( max([0,int(left-win_len/2)]),min([res,int(right+win_len/2)]))
+           
+                #idx_comp = range(idx_lr_comp[k,0],idx_lr_comp[k,1])
                 x_rec = x_sub_win[idx_comp]
                 y_rec = y_sub_win[idx_comp]
                 mean_rec =  mean_level_sub[idx_comp]
