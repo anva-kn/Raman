@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed May 13 16:52:29 2020
-
+.
 @author: Stefano rini
 """
 
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import hilbert, find_peaks
-import pylab as p
 import scipy.signal as sci
+import pylab as p
+import scipy.signal as scirange_peak
 import scipy.stats as stats
 #import pymf3
 from scipy.optimize import minimize
@@ -118,7 +119,6 @@ def cos_win2(x_data,beta):
     return yvec
 
 
-
 #-----------------------------------------------------------------------------
 # init functions
 
@@ -220,6 +220,24 @@ def find_peak_sym_supp(peak,l_pos,r_pos, win_len_mul, smooth_win, Y):
     return [l_pos_temp,r_pos_temp]
 
 
+#-----------------------------------------------------------------------------
+#
+# HERE WE PUT SOME PROCESSING FUNCTIONS
+#
+#-----------------------------------------------------------------------------
+
+def appr_area_gen_lor(beta):
+    
+    M=beta[0]
+    c=beta[1]
+    sgs=beta[2]
+    d=beta[3]
+    
+    return M*(2-1/d) 
+
+#-----------------------------------------------------------------------------
+
+
 #this assumes multiple peaks
 
 def find_mul_peak_sym_supp(int_idx, y_data_win, mean_level_win, discount=0.85):
@@ -231,9 +249,9 @@ def find_mul_peak_sym_supp(int_idx, y_data_win, mean_level_win, discount=0.85):
     # idx_comp_lr=find_mul_peak_sym_supp(idx_lr_comp[k],y_data_win,mean_level_win,0.85)
     # int_idx= idx_lr_comp[k]
     
-    y_data_win =y_data_win
-    mean_level_win
-        
+    # y_data_win =y_data_win
+    # mean_level_win
+    
     Y_smooth=y_data_win-mean_level_win
     # bring positive
     Y_smooth=Y_smooth-min(Y_smooth)
@@ -247,18 +265,19 @@ def find_mul_peak_sym_supp(int_idx, y_data_win, mean_level_win, discount=0.85):
             
 
     if l_pos_temp>0:
-        win_left=np.mean(Y_smooth[:l_pos_temp])    
+        win_left=np.mean(Y_smooth[:l_pos_temp])
         
         while win_left<=Y_smooth[l_pos_temp]  and  Y_smooth[l_pos_temp-1]>0  and l_pos_temp>0:        
+            win_left=np.mean(Y_smooth[:l_pos_temp])
             l_pos_temp=l_pos_temp-1
-            win_left=np.mean(Y_smooth[:l_pos_temp])*discount
                 
-    if r_pos_temp<res-1:                
-        win_right=np.mean(Y_smooth[r_pos_temp: ])
-    
+    if r_pos_temp<res-1:                        
+        win_right=np.mean(Y_smooth[r_pos_temp:])
+        
         while  win_right<=Y_smooth[r_pos_temp] and Y_smooth[r_pos_temp+1]>0 and r_pos_temp<res-2:     
+            win_right=np.mean(Y_smooth[r_pos_temp: ])
             r_pos_temp=r_pos_temp+1
-            win_right=np.mean(Y_smooth[r_pos_temp:])*discount
+
            
     l_pos_temp=l_pos_temp-1
     r_pos_temp=r_pos_temp+1
@@ -491,6 +510,21 @@ def remove_est_florescence(f_sup,data_sub):
         
     return data_sub2
     
+#-----------------------------------------------------------------------------
+# Peaks functios
+#-----------------------------------------------------------------------------
+
+# def area_gen_lor(beta)
+#     M=beta[0]
+#     c=beta[1]
+#     sgs=beta[2]
+#     d=beta[3]
+            
+#     # return [M/(1+(abs((x_data[i]-c)/sgs))**d) for i in range(x_data.size)]    
+#     return M
+
+
+
 #------------------------------------------------------------------------------
 # main function here
 
@@ -755,8 +789,7 @@ def find_win_supp(peak,l_pos,r_pos, y_up):
 
     else:
         Y_max_idx=l_pos+np.argmax(Y_smooth[l_pos:r_pos])
-    
-    
+        
     # check boundaries
     l_pos_temp=max(l_pos-1,0)
     r_pos_temp=min(r_pos+1,res-1)
@@ -764,16 +797,17 @@ def find_win_supp(peak,l_pos,r_pos, y_up):
     if l_pos_temp>0:
         win_left=np.mean(Y_smooth[:l_pos_temp])    
         
-        while win_left<=Y_smooth[l_pos_temp]  and  y_up[l_pos_temp-1]>0  and l_pos_temp>1:        
-            l_pos_temp=l_pos_temp-1
+        while win_left<=Y_smooth[l_pos_temp]  and  y_up[l_pos_temp-1]>0  and l_pos_temp>1:                    
             win_left=np.mean(Y_smooth[:l_pos_temp])
+            l_pos_temp=l_pos_temp-1
             
     if r_pos_temp<res-1:                
         win_right=np.mean(Y_smooth[r_pos_temp: ])
     
         while  win_right<=Y_smooth[r_pos_temp] and y_up[r_pos_temp+1]>0 and r_pos_temp<res-2:
-            r_pos_temp=r_pos_temp+1
             win_right=np.mean(Y_smooth[r_pos_temp:])
+            r_pos_temp=r_pos_temp+1
+            
             
             
     
@@ -850,7 +884,7 @@ def data_pre_process(f_sup,data):
     return data_sub2
 
 
-def identify_fitting_win_up(f_sup,space_mean,slide_win=100,fit_fun=gen_lor_amp, init_fit_fun=init_lor):
+def identify_fitting_win_up(f_sup,space_mean,slide_win=100,num_th=100,fit_fun=gen_lor_amp, init_fit_fun=init_lor):
     # slide the window, identify the block with small high  amplitude, fit 
     
     # loop over all windows of the data of size win 
@@ -876,7 +910,11 @@ def identify_fitting_win_up(f_sup,space_mean,slide_win=100,fit_fun=gen_lor_amp, 
     win_poly = np.empty(2*int(data_temp.size/slide_win), dtype=np.object)
     fit_gen_lor = np.empty(2*int(data_temp.size/slide_win), dtype=np.object)
 
-    fitting_data=np.empty( (2*int(data_temp.size/slide_win)   +1,10),dtype=object)
+    fitting_data=np.empty( (2*int(data_temp.size/slide_win)   +1,num_th),dtype=object)
+    
+       
+    th_10=np.linspace(-np.sort(-(y_data-np.mean(y_data)))[int(win_small)],0,num_th+1)
+    
     
     # for i in range(2*int(data_temp.size/slide_win)):
     #     win_poly [i] = []        
@@ -901,7 +939,9 @@ def identify_fitting_win_up(f_sup,space_mean,slide_win=100,fit_fun=gen_lor_amp, 
         # threshold for amplitude
         # DIP DOWN ONLY VERSION: WE PUT NO ABSOLUTE VAUE
         
-        th_10=np.linspace(-np.sort(-(y_data_win-mean_level_win))[int(win_small)],0,11)
+        # THRESHOLD HERE OR OUTSIDE?
+        # th_10=np.linspace(-np.sort(-(y_data_win-mean_level_win))[int(win_small)],0,11)
+    
     
         # total MSE of interpolation plus fitting        
         mse10=100*np.ones(th_10.shape[0])
@@ -1009,8 +1049,7 @@ def identify_fitting_win_up(f_sup,space_mean,slide_win=100,fit_fun=gen_lor_amp, 
                     ind_poly=ind_poly+list(range(left,right-1))    
             
                 ind_poly=np.array(ind_poly)
-                
-                               
+                                               
                 mean_level_win=np.poly1d(np.polyfit(x_data_win[ind_poly],y_data_win[ind_poly],2))(x_data_win)
                 mse_poly= np.var(y_data_win[ind_poly]-mean_level_win[ind_poly])
                 

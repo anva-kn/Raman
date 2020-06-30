@@ -13,7 +13,7 @@ from math import pi
 
 #import ste_model_spectrum.py
 
-from ste_model_spectrum_v2 import *
+from ste_model_spectrum_v3 import *
 
 res=964
 dim_s=100
@@ -28,9 +28,365 @@ for key in my_shelf:
     globals()[key]=my_shelf[key]
 my_shelf.close()
 
-
 space_mean=np.mean(data[2],axis=1)            
-[window , beta]=identify_fitting_win_up(f_sup,space_mean,100,gen_lor_amp,init_lor)
+f_sup=f_sup[:-1]
+
+
+fit_fun = gen_lor_amp
+init_fit_fun = init_lor
+
+slide_win=100
+num_th=100
+
+
+
+# one parameter: number of points for linear interpolation
+
+num_interp = 10
+
+
+
+y_interp = np.interp([0, 1, 1.5, 2.72, 3.14], f_sup, space_mean)
+
+
+
+
+
+
+#------------------------------------------------------------------------------
+
+
+# find the  points in which the 
+
+
+plt.plot(f_sup,space_mean)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+fitting_data=identify_fitting_win_up(f_sup,space_mean,num_th,num_th,gen_lor_amp,init_lor)
+
+
+
+
+# # merge the windows, swip through the i's and identify the windows
+
+if False
+    range_lr=[0 , 0]
+    for i in range(2*int(space_mean.shape[0]/slide_win)):
+            for j in range(1,num_th):
+                
+                range_lr=np.squeeze(np.array(fitting_data[i,j]['range_peak']))
+                        
+                if range_lr.size==1:
+                    print('Window',i,'Th',j,'No peak')
+                else:
+                    print('Window',i,'Th',j,'Range',range_lr[0],'--',range_lr[1])
+
+
+
+# stitch together the variaous windows and check visually
+
+all_win=[]
+
+for i in range(2*int(space_mean.shape[0]/slide_win)):        
+    for j in range(1,num_th):
+        peak_l_r_win=np.zeros((1,2))
+        # pile all intervals in the smallest threshold and check that everything is fine there
+        tmp=np.squeeze(np.array(fitting_data[i,j]['range_peak']))
+        if tmp.size>1:
+            tmp=tmp.reshape(int(tmp.size/2),2)
+            range_lr=np.array(i*int(slide_win/2)+tmp)
+            # range_lr=np.array(tmp)
+            # peak_l_r_win.extend(range_lr.tolist())
+            peak_l_r_win=np.concatenate((peak_l_r_win,range_lr),axis=0)
+                           
+            peak_l_r_win=peak_l_r_win[1:]
+            
+            sorted_on_start = sorted(peak_l_r_win.tolist())
+            
+            merged_lr = recursive_merge(sorted_on_start.copy())
+             
+            merged_lr = np.array(merged_lr ).astype(int)
+            
+            idx_peaks=[]        
+            for j in range(merged_lr.shape[0]):    
+                idx_peaks=idx_peaks+list(range(merged_lr[j,0],merged_lr[j,1]))    
+            
+            
+            idx_peaks=np.array(idx_peaks)
+            plt.plot(f_sup[idx_peaks],j+space_mean[idx_peaks],'--')
+                    
+
+
+# plot windows 
+
+            
+# let's check some peaks
+if False:
+    plt.plot(f_sup,space_mean)
+    for j in range(peak_l_r_win.shape[0]):
+        idx_peaks=range(int(peak_l_r_win[j,0]),int(peak_l_r_win[j,1]))
+        plt.plot(f_sup[idx_peaks],j+space_mean[idx_peaks],'--')
+
+
+
+
+#---------------------------------------------------------------------
+# merge windows on the boudaries across thresholds 
+# merging occurs at the same th. level
+
+
+
+
+
+
+
+
+
+#---------------------------------------------------------------------
+# rank peaks on MSE, hight, area, 
+
+
+
+# merge the windows, swip through the i's and identify the windows
+range_lr=[0 , 0]
+for i in range(2*int(space_mean.shape[0]/slide_win)):
+        for j in range(1,num_th):
+            
+            range_lr=np.squeeze(np.array(fitting_data[i,j]['range_peak']))
+            
+            if range_lr.size==1:
+                print('Window',i,'Th',j,'No peak')
+            else:
+                print('Window',i,'Th',j,'Range',range_lr[0],'--',range_lr[1])
+
+
+# ----------------------------------------------------------------------------
+
+
+peak_l_r_win=np.zeros((1,2))
+
+for i in range(2*int(space_mean.shape[0]/slide_win)):        
+        j=9
+        # pile all intervals in the smallest threshold and check that everything is fine there
+        tmp=np.squeeze(np.array(fitting_data[i,j]['range_peak']))
+        if tmp.size>1:
+            # rank_mse = 
+            # rank_area = 
+            # rank_hight =
+            
+            tmp=tmp.reshape(int(tmp.size/2),2)
+            range_lr=np.array(i*int(slide_win/2)+tmp)
+            # range_lr=np.array(tmp)
+            # peak_l_r_win.extend(range_lr.tolist())
+            peak_l_r_win=np.concatenate((peak_l_r_win,range_lr),axis=0)
+            
+        
+                    
+            
+
+# at this point we have to merge intervals that superpose A LOT: what do we mean by that?
+
+
+
+
+
+#----------------------------------------------------------------------------
+# choose the number of peaks you want and keep the N largest peaks.
+# then merge up the intervals so that you preserve those peaks
+
+peak_l_r_win=np.zeros((1,2))
+beta_win=np.zeros((1,4))
+rank_win= np.zeros((1,1))
+y_data=space_mean
+
+for i in range(2*int(space_mean.shape[0]/slide_win)):
+        for j in range(1,10):            
+                                    
+            beta_tmp = np.array(fitting_data[i,j]['beta_peak'])
+            
+            for k in  range(beta_tmp.shape[0]):
+                # beta_win = np.concatenate((beta_win,beta_tmp[k].reshape((1,4)),axis=0)                            
+                beta_tmp2=beta_tmp[k][0].reshape(1,4)
+                
+                beta_win = np.concatenate((beta_win,beta_tmp2))
+                
+                rank_tmp = appr_area_gen_lor(beta_tmp2.T)
+                                
+                rank_win = np.concatenate((rank_win,rank_tmp),axis=0)
+                
+            range_tmp=np.squeeze(np.array(fitting_data[i,j]['range_peak']))
+            range_tmp.reshape(int(range_tmp.size/2),2)
+            
+            peak_l_r_win=np.concatenate((peak_l_r_win,range_lr),axis=0)
+            
+
+peak_l_r_win=peak_l_r_win[1:]
+            
+
+
+
+
+
+# merge intervals on the boundaries
+
+
+# remove peaks in which the peaks are too close
+for  i in range(2*int(y_data.shape[0]/slide_win)):
+    np.where 
+    int(i*(slide_win/2))
+
+
+
+#-------------------------------------------------------------------------------
+# order the peaks by area (for now just do amplitude) and display the top TEN
+
+TOP=10
+
+
+
+
+#----------------------------------------------------------------------------
+#----------------------------------------------------------------------------
+#----------------------------------------------------------------------------
+
+# go down the thershold
+# -> split 
+# -> merge , or 
+# -> add
+# do this across neighbouring intervals
+# 
+
+
+
+
+
+
+
+
+
+
+
+
+#----------------------------------------------------------------------------
+#----------------------------------------------------------------------------
+#----------------------------------------------------------------------------
+
+for i in range(2*int(space_mean.shape[0]/slide_win)):        
+        j=9
+        # pile all intervals in the smallest threshold and check that everything is fine there
+        tmp=np.squeeze(np.array(fitting_data[i,j]['range_peak']))
+
+
+peak_l_r_win=peak_l_r_win[1:]
+
+sorted_on_start = sorted(peak_l_r_win.tolist())
+
+merged = recursive_merge(sorted_on_start.copy())
+
+merged_up =np.array(merged).astype(int)
+
+idx_peaks=[]        
+for k in range(merged_up.shape[0]):    
+    idx_peaks=idx_peaks+list(range(merged_up[k,0],merged_up[k,1]))    
+    
+idx_peaks=np.array(idx_peaks)
+# check the peak position
+
+if False:
+    plt.plot(f_sup,space_mean)
+    plt.plot(f_sup[idx_peaks],space_mean[idx_peaks],'--')
+
+peak_l_r_win.append(range_lr.tolist()) 
+peak_l_r_win = np.array(recursive_merge(peak_l_r_win.tolist())).astype(int)    
+
+
+
+
+
+for i in range(2*int(space_mean.shape[0]/slide_win)):        
+        
+        # pile all intervals in the smallest threshold and check that everything is fine there
+        tmp=np.squeeze(np.array(fitting_data[i,j]['range_peak']))
+
+
+
+for i in range(2*int(space_mean.shape[0]/slide_win)):
+        for j in range(1,10):
+            
+            range_lr=np.squeeze(np.array(fitting_data[i,j]['range_peak']))
+            
+            if range_lr.size==1:
+                print('Window',i,'Th',j,'No peak')
+            else:
+                print('Window',i,'Th',j,'Range',range_lr[0],'--',range_lr[1])
+    
+    
+
+
+
+# #
+# #-------------------------------------------------------------------------------
+    
+    
+#             peak_l_r_win=np.zeros([peaks.size,2])
+    
+#     for i in range(peaks.size):     
+#         [l_win, r_win]=find_win_supp(peaks[i],l_ips[i],r_ips[i], y_up_sub,1)
+#         peak_l_r_win[i]=[l_win, r_win]
+
+#         # merge intervals                       
+    
+    
+    
+    
+#         peak_l_r_win.append(range_lr.tolist()) 
+        
+    
+        
+#         # this is too tricky to implement atm         
+#         for i in range(peaks.size):     
+#             [l_win, r_win]=find_win_supp(peaks[i],l_ips[i],r_ips[i], y_up_sub)
+#             peak_l_r_win[i]=[l_win, r_win]
+    
+#         # for i in range(peaks.size):                 
+#         #     peak_l_r_win[i]=[l_ips[i], r_ips[i]]
+    
+#         # merge intervals                       
+#         peak_l_r_win = np.array(recursive_merge(peak_l_r_win.tolist())).astype(int)
+        
+    
+    
+    
+        
+    
+    
+#         # do they interset? the
+#         range_lr=np.squeeze(np.array(fitting_data[i,j]['range_peak']))
+        
+#         if range_lr.size==1:
+#             print('Window',i,'Th',j,'No peak')
+#         else:
+#             print('Window',i,'Th',j,'Range',range_lr[0],'--',range_lr[1])
+
+
+
+
+        
+
+# plot  the MSE in terms of the different threshold windows
+
 
 #------------------------------------------------------------------------------
 # import the clean ACE spectrum
