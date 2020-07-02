@@ -58,21 +58,25 @@ align_end=np.argmin((f_ACE-f_sup[-1])**2)
 len_temp=f_sup.shape[0]
 data_ace_temp =np.zeros(len_temp)
 n_feq=align_init
-
-i=0
+#%%
+# i=0
 s1=f_sup.copy()
 
-while i<len_temp-1:        
-    pos=np.where((f_ACE>=f_sup[i]) & (f_ACE<=f_sup[i+1]))
-    
-    # 
-    data_ace_temp[i] =np.mean(dataACE[pos])
-    
-    # update counter
-    i=i+1
-    
+# while i<len_temp-1:
+#     pos=np.where((f_ACE>=f_sup[i]) & (f_ACE<=f_sup[i+1]))
+#
+#     #
+#     data_ace_temp[i] =np.mean(dataACE[pos])
+#
+#     # update counter
+#     i=i+1
+
+for i in range(0, len_temp - 1):
+    pos = np.where((f_ACE >= f_sup[i]) & (f_ACE <= f_sup[i + 1]))
+    data_ace_temp[i] = np.mean(dataACE[pos])
+
 # last point just guess
-data_ace_temp[i]=dataACE[align_end]
+data_ace_temp[-1]=dataACE[align_end]
 
 # # just align at the index 47
 # dataACE[align_init:align_end]
