@@ -120,7 +120,7 @@ vecM=[comp_rangeM, comp_beta_gaussM, comp_beta_lorM, comp_beta_gen_lorM, comp_be
 recap_spectrum(f_sup,data_MG_mean_smooth,num_peaks,*vecM)
 
 plt.plot(f_sup,data_MG_mean_smooth)
-
+#%%
 #------------------------------------------------------------------------------
 
 # # model ACE 

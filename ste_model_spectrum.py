@@ -11,7 +11,7 @@ from scipy.signal import hilbert, find_peaks
 import pylab as p
 import scipy.signal as sci
 import scipy.stats as stats
-import pymf3
+# import pymf
 from scipy.optimize import minimize
 from scipy.optimize import curve_fit
 import math
