@@ -10,10 +10,11 @@ from scipy.optimize import minimize
 from scipy.optimize import curve_fit
 import math
 from math import pi
+from scipy.interpolate import interp1d
 
 #import ste_model_spectrum.py
 
-from ste_model_spectrum_v3 import *
+from ste_model_spectrum_v4 import *
 
 res=964
 dim_s=100
@@ -31,12 +32,18 @@ my_shelf.close()
 space_mean=np.mean(data[2],axis=1)            
 f_sup=f_sup[:-1]
 
-
 fit_fun = gen_lor_amp
 init_fit_fun = init_lor
 
 slide_win=100
 num_th=100
+
+win_small=int(slide_win/25)
+    
+# input
+# fitting function florescence
+# fitting function peak
+# ranking metric
 
 # proceduce: 
 
@@ -45,22 +52,84 @@ num_th=100
 # one parameter: number of threshord
 # choose peaks below threshould 
 # fit and store
-x_data=f_sup
-y_data=space_mean
-
-poly_interp=np.poly1d(np.polyfit(x_data,y_data,4))(x_data)
-idx_pos_min=np.argsort((y_data-poly_interp)**2)[:num_th]
-
-y_interp = np.interp(idx_pos_min, f_sup, space_mean)
-
-
 
 if False:
     plt.plot(x_data,y_data)
     plt.plot(x_data,poly_interp)
     plt.plot(x_data,y_interp)
     plt.plot(x_data[idx_pos_min],y_data[idx_pos_min],'*')
-    
+
+
+# it's better to smooth outside and find the peak per smoothing function
+space_mean=sci.savgol_filter(np.squeeze(space_mean), window_length = 2*int(win_small)+1, polyorder = 5)
+
+peak_tol=0.9
+
+fitting_data=identify_fitting_win_up(f_sup,space_mean,num_th,num_th,gen_lor_amp,init_lor,peak_tol)
+
+
+if False:
+    plt.plot(f_sup,space_mean)
+    for j in range(0,num_th,10):
+            
+        mean_level = np.squeeze(np.array(fitting_data[j]['lin_interp']))
+
+        range_lr = fitting_data[j]['range_peak']
+        
+        
+        if range_lr==0:
+            print('Th',j,'has to peak')
+        
+        else:             
+            #
+            plt.plot(f_sup,mean_level,'--')
+
+            beta_lr =  fitting_data[j]['beta_peak']            
+            for k in range(len(range_lr )):
+                # plot the fitting in the range 
+                
+                range_lr_temp=range_lr[k].astype(int)
+                beta_temp=beta_lr[k]
+                 
+                for l in range(range_lr_temp.shape[0]):
+                
+                   range_lr_temp2=range_lr_temp[l]
+                   beta_temp2=beta_temp[l]
+                   
+                   idx=np.array(range(range_lr_temp2[0],range_lr_temp2[1]))
+                   #gen_lor_amp(idx,beta_tmp[k])
+                        
+                   plt.plot(f_sup[idx],fit_fun(idx,beta_temp2)+mean_level[idx])
+                                            
+                    
+                
+                
+                
+                if range_lr.ndim==1:
+                    range_lr_temp=range_lr
+                else:
+                    range_lr_temp=range_lr[k]
+                
+                #range_lr_temp=range_lr_temp.reshape(int(range_lr_temp.size/2),2)
+                
+                for l in range(range_lr_temp.shape[0]):
+                    
+                    if range_lr_temp.ndim==1:
+                        range_lr_temp2=range_lr_temp
+                    else:
+                        if range_lr_temp.shape[0]==1:
+                            range_lr_temp2=range_lr_temp.reshape(2)
+                            beta_arr=beta_tmp[0][0]
+                        else:
+                            range_lr_temp2=range_lr_temp[l].reshape(2)
+                            beta_arr=beta_tmp[l][0]
+                             
+                    idx=np.array(range(range_lr_temp2[0],range_lr_temp2[1]))
+                    #gen_lor_amp(idx,beta_tmp[k])
+                    
+                    plt.plot(f_sup[idx],fit_fun(idx,beta_arr)+mean_level[idx])
+                                        
+
 
 
  
@@ -105,7 +174,7 @@ fitting_data=identify_fitting_win_up(f_sup,space_mean,num_th,num_th,gen_lor_amp,
 
 # # merge the windows, swip through the i's and identify the windows
 
-if False
+if False:
     range_lr=[0 , 0]
     for i in range(2*int(space_mean.shape[0]/slide_win)):
             for j in range(1,num_th):
@@ -162,7 +231,6 @@ if False:
     for j in range(peak_l_r_win.shape[0]):
         idx_peaks=range(int(peak_l_r_win[j,0]),int(peak_l_r_win[j,1]))
         plt.plot(f_sup[idx_peaks],j+space_mean[idx_peaks],'--')
-
 
 
 
