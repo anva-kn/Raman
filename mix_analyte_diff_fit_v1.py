@@ -11,7 +11,7 @@ from scipy.optimize import minimize
 from scipy.optimize import curve_fit
 import math
 from math import pi
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d, UnivariateSpline
 
 # import ste_model_spectrum.py
 
@@ -89,9 +89,12 @@ data_mean[0] = data_ace_temp
 #plt.legend()
 #plt.show()
 
-interpolation_of_mg = interp1d(f_sup, data_mean, axis=0, fill_value='extrapolate')
-x_new = np.arange(0, len_temp, 0.6025)
-y_new = interpolation_of_mg(x_new)
-plt.figure('ACE and Interpolation')
-plt.plot(f_sup, data_mean)#, '-', x_new, y_new, '*')
+
+plt.figure('ACE')
+s = UnivariateSpline(f_sup, data_mean[0], s=5)
+xs = np.linspace(0, 963, 200)
+ys = s(xs)
+
+plt.plot(f_sup, data_mean[0])
+#plt.plot(xs, ys, 'o')
 plt.show()

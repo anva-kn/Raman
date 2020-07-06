@@ -75,7 +75,14 @@ if False:
         mean_level = np.squeeze(np.array(fitting_data[j]['lin_interp']))
 
         range_lr = fitting_data[j]['range_peak']
-        
+        plt.figure('ACE')
+s = UnivariateSpline(f_sup, data_mean_ace, s=5)
+xs = np.linspace(0, 963, 200)
+ys = s(xs)
+
+plt.plot(f_sup, data_mean[0])
+#plt.plot(xs, ys, 'o')
+plt.show()
         
         if range_lr==0:
             print('Th',j,'has to peak')
