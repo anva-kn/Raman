@@ -65,7 +65,7 @@ space_mean=sci.savgol_filter(np.squeeze(space_mean), window_length = 2*int(win_s
 
 peak_tol=0.9
 
-fitting_data=identify_fitting_win_up(f_sup,space_mean,num_th,num_th,gen_lor_amp,init_lor,peak_tol)
+fitting_data=identify_fitting_win_up(f_sup,space_mean,num_th,num_th,gen_lor_amp,init_lor,peak_tol,min_peak_width)
 
 
 if False:
@@ -82,7 +82,7 @@ if False:
         
         else:             
             #
-            plt.plot(f_sup,mean_level,'--')
+            plt.plot(f_sup,mean_level,'--b')
 
             beta_lr =  fitting_data[j]['beta_peak']            
             for k in range(len(range_lr )):
@@ -99,11 +99,8 @@ if False:
                    idx=np.array(range(range_lr_temp2[0],range_lr_temp2[1]))
                    #gen_lor_amp(idx,beta_tmp[k])
                         
-                   plt.plot(f_sup[idx],fit_fun(idx,beta_temp2)+mean_level[idx])
-                                            
-                    
-                
-                
+                   plt.plot(f_sup[idx],fit_fun(idx,beta_temp2)+mean_level[idx],'-k')
+                                                             
                 
                 if range_lr.ndim==1:
                     range_lr_temp=range_lr
@@ -137,8 +134,6 @@ th_10=np.linspace(-np.sort(-(y_data_win-mean_level_win))[int(win_small)],0,11)
 
 
 mse_poly= np.var(y_data_win[ind_poly]-mean_level_win[ind_poly])
-
-
 
 
 

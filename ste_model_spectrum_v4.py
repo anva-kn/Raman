@@ -883,7 +883,7 @@ def data_pre_process(f_sup,data):
     return data_sub2
 
 
-def identify_fitting_win_up(f_sup,space_mean,slide_win=100,num_th=10,fit_fun=gen_lor_amp, init_fit_fun=init_lor,peak_tol=0.85):
+def identify_fitting_win_up(f_sup,space_mean,slide_win=100,num_th=10,fit_fun=lor_amp, init_fit_fun=init_lor,peak_tol=0.85):
     # slide the window, identify the block with small high  amplitude, fit 
     
     # loop over all windows of the data of size win 
