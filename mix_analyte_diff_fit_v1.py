@@ -12,6 +12,10 @@ from scipy.optimize import curve_fit
 import math
 from math import pi
 from scipy.interpolate import interp1d, UnivariateSpline
+from sklearn.metrics import mean_squared_error
+from collections import namedtuple
+import itertools
+
 
 # import ste_model_spectrum.py
 
@@ -89,12 +93,55 @@ data_mean[0] = data_ace_temp
 #plt.legend()
 #plt.show()
 
+data_mean_ace = np.copy(data_mean[0])
+data_mean_mg = np.copy(data_mean[1])
 
-plt.figure('ACE')
-s = UnivariateSpline(f_sup, data_mean[0], s=5)
-xs = np.linspace(0, 963, 200)
-ys = s(xs)
+data_mean_ace_smoothed = sci.savgol_filter(data_mean_ace, 101, 2)
+data_mean_mg_smoothed = sci.savgol_filter(data_mean_mg, 101, 2)
 
-plt.plot(f_sup, data_mean[0])
-#plt.plot(xs, ys, 'o')
+###<--------------Calculate neccessary erros for comparison-----------------------------
+# error_ace is responsible for determening the position of the point (below or above predicted curve)
+# arror_ace_abs is used alongside rmse_ace(root_mean_square_error of ace) to determine if the peak is strong enough
+
+
+error_ace = data_mean_ace - data_mean_ace_smoothed
+error_ace_abs = np.abs(error_ace)
+rmse_ace = np.sqrt(mean_squared_error(data_mean_ace, data_mean_ace_smoothed))
+
+error_mg = data_mean_mg - data_mean_mg_smoothed
+error_mg_abs = np.abs(error_mg)
+rmse_mg = np.sqrt(mean_squared_error(data_mean_mg, data_mean_mg_smoothed))
+###<------------------------------------------------------------------------------------
+
+#<-----------------Detecting points that are above interpolated savgol_filter curve-----
+Peak = namedtuple('Peak', ['index_pos', 'value'])
+temp_list = []  # Create temproray namedtuple to store position of the peak and value of the peak
+for index, (value, value_error, value_error_abs) in enumerate(zip(data_mean_mg, error_mg, error_mg_abs)):
+    if (value_error_abs > rmse_ace) and value_error > 0:
+        temp_peak = Peak(index, value)
+        temp_list.append(temp_peak)
+
+peaks_list = []
+for index, peak in enumerate(islice(temp_list, len(temp_list) - 1)):
+    if (peak.index_pos - temp_list[index + 1].index_pos) == -1 and peak.value > temp_list[index + 1].value:
+        if peak.value < temp_list[index - 1].value:
+            pass
+        else:
+            peaks_list.append(peak)
+#<-------------------------------------------------------------------------------------
+
+#<-----------------Converting peaks indeces to frequency values-------------------------
+peak_frequency = np.zeros(len(peaks_list))
+peak_values = np.zeros(len(peaks_list))
+for index, (value_peak, frequency) in enumerate(zip(peaks_list, f_sup)):
+    peak_frequency[index] = f_sup[value_peak.index_pos]
+    peak_values[index] = value_peak.value
+#<--------------------------------------------------------------------------------------
+plt.figure('MG')
+plt.plot(f_sup, data_mean_mg, '-', label='MG')
+# plt.plot(f_sup, data_mean_mg, '-', label='MG')
+plt.plot(f_sup, data_mean_mg_smoothed, '-', label='MG-smooth')
+# plt.plot(f_sup, data_mean_mg_smoothed, '*', label='MG-smooth')
+plt.plot(peak_frequency, peak_values, '*', label='Peaks')
+plt.legend()
 plt.show()

@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import pylab as p
 import scipy.signal as sci
 import scipy.stats as stats
-import pymf3
+# import pymf3
 from math import pi
 
 from scipy.optimize import leastsq
