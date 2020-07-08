@@ -95,19 +95,31 @@ data_mean[0] = data_ace_temp
 
 data_mean_ace = np.copy(data_mean[0])
 data_mean_mg = np.copy(data_mean[1])
+data_mean_ace_mix_1 = np.copy(data_mean[2])
+data_mean_ace_mix_2 = np.copy(data_mean[3])
 
 data_mean_ace_smoothed = sci.savgol_filter(data_mean_ace, 101, 2)
+data_mean_ace_mix_1_smoothed = sci.savgol_filter(data_mean_ace_mix_1, 101, 2)
+data_mean_ace_mix_2_smoothed = sci.savgol_filter(data_mean_ace_mix_2, 101, 2)
 data_mean_mg_smoothed = sci.savgol_filter(data_mean_mg, 101, 2)
 
 ###<--------------Calculate neccessary erros for comparison-----------------------------
 # error_ace is responsible for determening the position of the point (below or above predicted curve)
 # arror_ace_abs is used alongside rmse_ace(root_mean_square_error of ace) to determine if the peak is strong enough
 
-
+#ACE errors
 error_ace = data_mean_ace - data_mean_ace_smoothed
 error_ace_abs = np.abs(error_ace)
 rmse_ace = np.sqrt(mean_squared_error(data_mean_ace, data_mean_ace_smoothed))
+#ACE mix1 & mix2 errors
+error_ace_mix_v1 = data_mean_ace_mix_1 - data_mean_ace_mix_1_smoothed
+error_ace_abs_mix_v1 = np.abs(error_ace_mix_v1)
+rmse_ace_mix_v1 = np.sqrt(mean_squared_error(data_mean_ace_mix_1, data_mean_ace_mix_1_smoothed))
 
+error_ace_mix_v2 = data_mean_ace_mix_2 - data_mean_ace_mix_2_smoothed
+error_ace_abs_mix_v2 = np.abs(error_ace_mix_v2)
+rmse_ace_mix_v2 = np.sqrt(mean_squared_error(data_mean_ace_mix_2, data_mean_ace_mix_2_smoothed))
+#MG errors
 error_mg = data_mean_mg - data_mean_mg_smoothed
 error_mg_abs = np.abs(error_mg)
 rmse_mg = np.sqrt(mean_squared_error(data_mean_mg, data_mean_mg_smoothed))
@@ -116,7 +128,7 @@ rmse_mg = np.sqrt(mean_squared_error(data_mean_mg, data_mean_mg_smoothed))
 #<-----------------Detecting points that are above interpolated savgol_filter curve-----
 Peak = namedtuple('Peak', ['index_pos', 'value'])
 temp_list = []  # Create temproray namedtuple to store position of the peak and value of the peak
-for index, (value, value_error, value_error_abs) in enumerate(zip(data_mean_mg, error_mg, error_mg_abs)):
+for index, (value, value_error, value_error_abs) in enumerate(zip(data_mean_ace_mix_1, error_ace_abs_mix_v1, error_ace_abs_mix_v1)):
     if (value_error_abs > rmse_ace) and value_error > 0:
         temp_peak = Peak(index, value)
         temp_list.append(temp_peak)
@@ -137,10 +149,10 @@ for index, (value_peak, frequency) in enumerate(zip(peaks_list, f_sup)):
     peak_frequency[index] = f_sup[value_peak.index_pos]
     peak_values[index] = value_peak.value
 #<--------------------------------------------------------------------------------------
-plt.figure('MG')
-plt.plot(f_sup, data_mean_mg, '-', label='MG')
+plt.figure('ACE mix1')
+plt.plot(f_sup, data_mean_ace_mix_1, '-', label='MG')
 # plt.plot(f_sup, data_mean_mg, '-', label='MG')
-plt.plot(f_sup, data_mean_mg_smoothed, '-', label='MG-smooth')
+plt.plot(f_sup, data_mean_ace_mix_1_smoothed, '-', label='MG-smooth')
 # plt.plot(f_sup, data_mean_mg_smoothed, '*', label='MG-smooth')
 plt.plot(peak_frequency, peak_values, '*', label='Peaks')
 plt.legend()
