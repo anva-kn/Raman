@@ -128,8 +128,8 @@ rmse_mg = np.sqrt(mean_squared_error(data_mean_mg, data_mean_mg_smoothed))
 #<-----------------Detecting points that are above interpolated savgol_filter curve-----
 Peak = namedtuple('Peak', ['index_pos', 'value'])
 temp_list = []  # Create temproray namedtuple to store position of the peak and value of the peak
-for index, (value, value_error, value_error_abs) in enumerate(zip(data_mean_ace_mix_1, error_ace_abs_mix_v1, error_ace_abs_mix_v1)):
-    if (value_error_abs > rmse_ace) and value_error > 0:
+for index, (value, value_error, value_error_abs) in enumerate(zip(data_mean_ace_mix_1, error_ace_mix_v1, error_ace_abs_mix_v1)):
+    if (value_error_abs > rmse_ace_mix_v1) and value_error > 0:
         temp_peak = Peak(index, value)
         temp_list.append(temp_peak)
 
@@ -149,11 +149,65 @@ for index, (value_peak, frequency) in enumerate(zip(peaks_list, f_sup)):
     peak_frequency[index] = f_sup[value_peak.index_pos]
     peak_values[index] = value_peak.value
 #<--------------------------------------------------------------------------------------
-plt.figure('ACE mix1')
-plt.plot(f_sup, data_mean_ace_mix_1, '-', label='MG')
-# plt.plot(f_sup, data_mean_mg, '-', label='MG')
-plt.plot(f_sup, data_mean_ace_mix_1_smoothed, '-', label='MG-smooth')
-# plt.plot(f_sup, data_mean_mg_smoothed, '*', label='MG-smooth')
-plt.plot(peak_frequency, peak_values, '*', label='Peaks')
+#<-----------------Detecting points that are above interpolated savgol_filter curve-----
+Peak_1 = namedtuple('Peak', ['index_pos', 'value'])
+temp_list = []  # Create temproray namedtuple to store position of the peak and value of the peak
+for index, (value, value_error, value_error_abs) in enumerate(zip(data_mean_ace, error_ace, error_ace_abs)):
+    if (value_error_abs > rmse_ace) and value_error > 0:
+        temp_peak = Peak_1(index, value)
+        temp_list.append(temp_peak)
+
+peaks_list_1 = []
+for index, peak in enumerate(islice(temp_list, len(temp_list) - 1)):
+    if (peak.index_pos - temp_list[index + 1].index_pos) == -1 and peak.value > temp_list[index + 1].value:
+        if peak.value < temp_list[index - 1].value:
+            pass
+        else:
+            peaks_list_1.append(peak)
+#<-------------------------------------------------------------------------------------
+
+#<-----------------Converting peaks indeces to frequency values-------------------------
+peak_frequency_1 = np.zeros(len(peaks_list_1))
+peak_values_1 = np.zeros(len(peaks_list_1))
+for index, (value_peak, frequency) in enumerate(zip(peaks_list_1, f_sup)):
+    peak_frequency_1[index] = f_sup[value_peak.index_pos]
+    peak_values_1[index] = value_peak.value
+#<--------------------------------------------------------------------------------------
+
+#<-----------------Detecting points that are above interpolated savgol_filter curve-----
+Peak_2 = namedtuple('Peak', ['index_pos', 'value'])
+temp_list = []  # Create temproray namedtuple to store position of the peak and value of the peak
+for index, (value, value_error, value_error_abs) in enumerate(zip(data_mean_mg, error_mg, error_mg_abs)):
+    if (value_error_abs > rmse_mg) and value_error > 0:
+        temp_peak = Peak_2(index, value)
+        temp_list.append(temp_peak)
+
+peaks_list_2 = []
+for index, peak in enumerate(islice(temp_list, len(temp_list) - 1)):
+    if (peak.index_pos - temp_list[index + 1].index_pos) == -1 and peak.value > temp_list[index + 1].value:
+        if peak.value < temp_list[index - 1].value:
+            pass
+        else:
+            peaks_list_2.append(peak)
+#<-------------------------------------------------------------------------------------
+
+#<-----------------Converting peaks indeces to frequency values-------------------------
+peak_frequency_2 = np.zeros(len(peaks_list_2))
+peak_values_2 = np.zeros(len(peaks_list_2))
+for index, (value_peak, frequency) in enumerate(zip(peaks_list_2, f_sup)):
+    peak_frequency_2[index] = f_sup[value_peak.index_pos]
+    peak_values_2[index] = value_peak.value
+#<--------------------------------------------------------------------------------------
+
+plt.figure('ACE & mix1')
+plt.plot(f_sup, data_mean_ace, '-', label='ACE')
+plt.plot(f_sup, data_mean_mg, '-', label='MG')
+plt.plot(f_sup, data_mean_ace_smoothed, '-', label='ACE-smooth')
+plt.plot(f_sup, data_mean_mg_smoothed, '-', label='MG-smooth')
+plt.plot(peak_frequency, peak_values, '*', label='Peaks ace clear')
+plt.plot(f_sup, data_mean_ace_mix_1, '-', label='ACE mix1')
+plt.plot(f_sup, data_mean_ace_mix_1_smoothed, '-', label='ACE-smooth  mix')
+plt.plot(peak_frequency_1, peak_values_1, '*', label='Peaks mix1')
+plt.plot(peak_frequency_2, peak_values_2, '*', label='Peaks MG')
 plt.legend()
 plt.show()
