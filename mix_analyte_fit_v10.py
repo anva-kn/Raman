@@ -39,7 +39,8 @@ pred2 = fit2.predict(dmatrix("bs(valid, knots=(25,40,50,65),degree =3, include_i
 
 #import ste_model_spectrum.py
 
-from ste_model_spectrum_v4 import *
+# from ste_model_spectrum_v4 import *
+from ste_model_spectrum_v5 import *
 
 res=964
 dim_s=100
