@@ -94,7 +94,7 @@ interpol_mse = []
 interpol_pos = interpol_pos + [0,np.argmin(y_data),res-1]
 interpol_mse = interpol_mse+[1000, 1000 , 1000 ]
 #
-plt.plot(x_data,y_data)
+plot(x_data, y_data)
 
 # random restarts?
 
@@ -163,8 +163,8 @@ for j in range(num_th):
     y_bsp=si.interp1d(x_data[interpol_pos],y_data[interpol_pos], kind='cubic')(x_data)
     
     # plt.plot(x_data,y_data)
-    plt.plot(x_data,y_hat)
-    plt.plot(x_data,y_bsp)
+    plot(x_data, y_hat)
+    plot(x_data, y_bsp)
 
         
 
@@ -351,7 +351,7 @@ mse_poly= np.var(y_data_win[ind_poly]-mean_level_win[ind_poly])
 # find the  points in which the 
 
 
-plt.plot(f_sup,space_mean)
+plot(f_sup, space_mean)
 
 
 
@@ -417,7 +417,7 @@ for i in range(2*int(space_mean.shape[0]/slide_win)):
             
             
             idx_peaks=np.array(idx_peaks)
-            plt.plot(f_sup[idx_peaks],j+space_mean[idx_peaks],'--')
+            plot(f_sup[idx_peaks], j + space_mean[idx_peaks], '--')
                     
 
 
@@ -720,12 +720,12 @@ data_ace_temp[i]=dataACE[align_end]
 
 
 while False:
-    plt.plot(f_ACE, dataACE,label='orig')
-    plt.plot(f_sup, data_ace_temp,label='temp')
-    plt.plot(f_sup, data_mean[0],label='data')
+    plot(f_ACE, dataACE, label='orig')
+    plot(f_sup, data_ace_temp, label='temp')
+    plot(f_sup, data_mean[0], label='data')
     
-    plt.legend()
-    plt.show()
+    legend()
+    show()
 
 #------------------------------------------------------------------------------
 
@@ -734,15 +734,15 @@ data_mean[0]=data_ace_temp
 
 #------------------------------------------------------------------------------
 
-plt.figure('raw data')
+figure('raw data')
 labels = ['ACE', 'MG', 'mix1_1','mix1_2','mix2_1','mix2_2']
 
 
 for data_mean, label in zip(data_mean, labels):
-    plt.plot(f_sup, data_mean, label=label)
+    plot(f_sup, data_mean, label=label)
 
-plt.legend()
-plt.show()
+legend()
+show()
 
 num_peaks=10
 
@@ -767,7 +767,7 @@ vecM=[comp_rangeM, comp_beta_gaussM, comp_beta_lorM, comp_beta_gen_lorM, comp_be
 
 recap_spectrum(f_sup,data_MG_mean_smooth,num_peaks,*vecM)
 
-plt.plot(f_sup,data_MG_mean_smooth)
+plot(f_sup, data_MG_mean_smooth)
 
 #------------------------------------------------------------------------------
 
@@ -785,15 +785,15 @@ recap_spectrum(f_sup,data_ACE_mean_smooth,num_peaks, comp_rangeA, comp_beta_gaus
 
 # show the smoothing
 while False:
-    plt.figure("Smoothing")
-    plt.plot(f_sup,data_MG_sparse)
-    plt.plot(f_sup,data_MG_mean_smooth)
+    figure("Smoothing")
+    plot(f_sup, data_MG_sparse)
+    plot(f_sup, data_MG_mean_smooth)
 
 
 while False:
-    plt.figure("Smoothing")
-    plt.plot(data_ACE_sparse)
-    plt.plot(data_ACE_mean_smooth)
+    figure("Smoothing")
+    plot(data_ACE_sparse)
+    plot(data_ACE_mean_smooth)
     
 
     
@@ -839,7 +839,7 @@ space_mean=np.mean(data[2],axis=1)
 
 # compare with the previous processing
 
-plt.plot(f_sup,np.mean(data[2],axis=1))
+plot(f_sup, np.mean(data[2], axis=1))
 
 identify_fitting_win_up
 
@@ -879,35 +879,35 @@ rec22=recap_spectrum(f_sup,data_22_smooth,2*num_peaks,*vec_21)
 recMG=recap_spectrum(f_sup,data_MG_mean_smooth,num_peaks,*vecM)
 recACE=recap_spectrum(f_sup,data_ACE_mean_smooth,num_peaks,*vecA)
 
-plt.plot(rec11,label='11')
-plt.plot(np.mean(data[2],axis=1)-np.mean(data[2]))
-plt.plot(recMG,label='MG')
-plt.plot(recACE,label='ACE')
-plt.legend()
-plt.show()
+plot(rec11, label='11')
+plot(np.mean(data[2], axis=1) - np.mean(data[2]))
+plot(recMG, label='MG')
+plot(recACE, label='ACE')
+legend()
+show()
 
 
 
-plt.plot(rec21,label='21 rec')
-plt.plot(data_21_smooth,'--',label='21')
-plt.plot(np.mean(data[4],axis=1)-np.mean(data[4]))
-plt.plot(recMG,label='MG')
-plt.plot(recACE,label='ACE')
-plt.legend()
-plt.show()
+plot(rec21, label='21 rec')
+plot(data_21_smooth, '--', label='21')
+plot(np.mean(data[4], axis=1) - np.mean(data[4]))
+plot(recMG, label='MG')
+plot(recACE, label='ACE')
+legend()
+show()
 
 
 
-plt.plot(rec22,label='22 rec')
-plt.plot(data_22_smooth,'--',label='22')
-plt.plot(np.mean(data22v1,axis=1),'-.',label='22 orig.')
-plt.plot(np.mean(data[5],axis=1)-np.mean(data[5]))
-plt.plot(np.mean(data22,axis=1)-np.mean(data22))
-plt.plot(data22,'--',label='22')
-plt.plot(recMG,label='MG')
-plt.plot(recACE,label='ACE')
-plt.legend()
-plt.show()
+plot(rec22, label='22 rec')
+plot(data_22_smooth, '--', label='22')
+plot(np.mean(data22v1, axis=1), '-.', label='22 orig.')
+plot(np.mean(data[5], axis=1) - np.mean(data[5]))
+plot(np.mean(data22, axis=1) - np.mean(data22))
+plot(data22, '--', label='22')
+plot(recMG, label='MG')
+plot(recACE, label='ACE')
+legend()
+show()
     
 ####--------------------------------------------------------------------------
 ####--------------------------------------------------------------------------
@@ -930,11 +930,11 @@ if correlation_approach:
     
     # start with data 15
     
-    plt.plot(np.mean(data11,axis=1)-np.mean(data11),label='v0')
-    plt.plot(np.mean(data11v1,axis=1)-np.mean(data11v1),label='v1')
-    plt.plot(dataMG_hat,label='MG hat')
-    plt.legend()
-    plt.show
+    plot(np.mean(data11, axis=1) - np.mean(data11), label='v0')
+    plot(np.mean(data11v1, axis=1) - np.mean(data11v1), label='v1')
+    plot(dataMG_hat, label='MG hat')
+    legend()
+    show
     
     dataMG_hat=reconstruct_spectrum(f_sup,*vecM)
     dataA_hat=reconstruct_spectrum(f_sup,*vecA)
@@ -965,10 +965,10 @@ if correlation_approach:
     plot_cor_space=1
     
     if plot_cor_space:
-        plt.figure('Total correlation in space for MG')
-        plt.plot(corr_11MG.reshape(dim_s)-np.mean(corr_11MG.reshape(dim_s)),'*-',label='11-MG')
-        plt.plot(corr_11MGv1.reshape(dim_s)-np.mean(corr_11MGv1.reshape(dim_s)),'*-',label='11-MG-v1')
-        plt.legend()
+        figure('Total correlation in space for MG')
+        plot(corr_11MG.reshape(dim_s) - np.mean(corr_11MG.reshape(dim_s)), '*-', label='11-MG')
+        plot(corr_11MGv1.reshape(dim_s) - np.mean(corr_11MGv1.reshape(dim_s)), '*-', label='11-MG-v1')
+        legend()
         # plt.plot(corr_12MG.reshape(dim_s),'.-',label='12-MG')
         
         # plt.plot(corr_21MG.reshape(dim_s),'|-',label='21-MG')
@@ -976,19 +976,19 @@ if correlation_approach:
         
         
     
-        plt.legend()
-        plt.show()
+        legend()
+        show()
     
-        plt.figure('Total correlation in space for A')
+        figure('Total correlation in space for A')
         
-        plt.plot(corr_11A.reshape(dim_s),'*-',label='11-A')
-        plt.plot(corr_12A.reshape(dim_s),'.-',label='12-A')
+        plot(corr_11A.reshape(dim_s), '*-', label='11-A')
+        plot(corr_12A.reshape(dim_s), '.-', label='12-A')
         
-        plt.plot(corr_21A.reshape(dim_s),'|-',label='21-A')
-        plt.plot(corr_22A.reshape(dim_s),'+-',label='22-A')
+        plot(corr_21A.reshape(dim_s), '|-', label='21-A')
+        plot(corr_22A.reshape(dim_s), '+-', label='22-A')
     
-        plt.legend()
-        plt.show()
+        legend()
+        show()
     
     
     # average correlation in time
@@ -1004,11 +1004,11 @@ if correlation_approach:
     plot_time_corr=1
     
     if plot_time_corr:
-        plt.plot(time_corr_MG,'o-',label='MG')
-        plt.plot(time_corr_A,'+-',label='A')
+        plot(time_corr_MG, 'o-', label='MG')
+        plot(time_corr_A, '+-', label='A')
         
-        plt.legend()
-        plt.show()
+        legend()
+        show()
         
     
     # average correlation PER PEAK
@@ -1057,46 +1057,46 @@ if correlation_approach:
         mean_corr22A[i]=np.mean(np.dot(dataA_hat[l_win:r_win],data22[l_win:r_win].reshape([r_win-l_win,dim_s])))
         
     corr_peak=1
-    plt.figure('Correlation recap')
+    figure('Correlation recap')
     
     if corr_peak:
         
-        plt.plot(mean_corr11M,'*-',label='M-11')
-        plt.plot(mean_corr12M,'.-',label='M-12')
-        plt.plot(mean_corr21M,'|-',label='M-21')
-        plt.plot(mean_corr22M,'+-',label='M-22')
+        plot(mean_corr11M, '*-', label='M-11')
+        plot(mean_corr12M, '.-', label='M-12')
+        plot(mean_corr21M, '|-', label='M-21')
+        plot(mean_corr22M, '+-', label='M-22')
         
-        plt.plot(mean_corr11A,'*-',label='A-11')
-        plt.plot(mean_corr12A,'.-',label='A-12')
-        plt.plot(mean_corr21A,'|-',label='A-21')
-        plt.plot(mean_corr22A,'+-',label='A-22')
+        plot(mean_corr11A, '*-', label='A-11')
+        plot(mean_corr12A, '.-', label='A-12')
+        plot(mean_corr21A, '|-', label='A-21')
+        plot(mean_corr22A, '+-', label='A-22')
             
             
-        plt.legend()
-        plt.show()
+        legend()
+        show()
         
     
     
     # CHECH THE CORRELATION POINT AT 
-    plt.figure('Check position (1,8) ')
+    figure('Check position (1,8) ')
     
-    plt.plot(data21[:,1,8],label='2,1 pos(1,8)') 
-    plt.plot(data22[:,1,8],label='2,2 pos(1,8)') 
-    plt.plot(np.mean(data21,axis=(1,2)), label='2,1 mean' )
-    plt.plot(np.mean(data22,axis=(1,2)), label='2,2 mean' )
+    plot(data21[:, 1, 8], label='2,1 pos(1,8)')
+    plot(data22[:, 1, 8], label='2,2 pos(1,8)')
+    plot(np.mean(data21, axis=(1, 2)), label='2,1 mean')
+    plot(np.mean(data22, axis=(1, 2)), label='2,2 mean')
     
-    plt.legend()
-    plt.show()
+    legend()
+    show()
     
     
     # MODEL AVERAGE SPECTRUM
     
-    plt.plot(np.max(data21,axis=(1,2)), label='2,1 max' )
-    plt.plot(np.max(data22,axis=(1,2)), label='2,2 max' )
-    plt.plot(np.mean(data21,axis=(1,2)), label='2,1 mean' )
-    plt.plot(np.mean(data22,axis=(1,2)), label='2,2 mean' )
-    plt.legend()
-    plt.show()
+    plot(np.max(data21, axis=(1, 2)), label='2,1 max')
+    plot(np.max(data22, axis=(1, 2)), label='2,2 max')
+    plot(np.mean(data21, axis=(1, 2)), label='2,1 mean')
+    plot(np.mean(data22, axis=(1, 2)), label='2,2 mean')
+    legend()
+    show()
     
 
 # """
