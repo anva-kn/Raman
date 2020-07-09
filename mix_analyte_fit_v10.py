@@ -10,7 +10,7 @@ from scipy.optimize import minimize
 from scipy.optimize import curve_fit
 import math
 from math import pi
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d, UnivariateSpline
 
 #import ste_model_spectrum.py
 
@@ -84,58 +84,58 @@ plt.plot(f_sup, data_mean[0])
 #plt.plot(xs, ys, 'o')
 plt.show()
         
-        if range_lr==0:
-            print('Th',j,'has to peak')
-        
-        else:             
-            #
-            plt.plot(f_sup,mean_level,'--')
+if range_lr==0:
+    print('Th',j,'has to peak')
 
-            beta_lr =  fitting_data[j]['beta_peak']            
-            for k in range(len(range_lr )):
-                # plot the fitting in the range 
-                
-                range_lr_temp=range_lr[k].astype(int)
-                beta_temp=beta_lr[k]
-                 
-                for l in range(range_lr_temp.shape[0]):
-                
-                   range_lr_temp2=range_lr_temp[l]
-                   beta_temp2=beta_temp[l]
-                   
-                   idx=np.array(range(range_lr_temp2[0],range_lr_temp2[1]))
-                   #gen_lor_amp(idx,beta_tmp[k])
-                        
-                   plt.plot(f_sup[idx],fit_fun(idx,beta_temp2)+mean_level[idx])
-                                            
-                    
-                
-                
-                
-                if range_lr.ndim==1:
-                    range_lr_temp=range_lr
+else:
+    #
+    plt.plot(f_sup,mean_level,'--')
+
+    beta_lr =  fitting_data[j]['beta_peak']
+    for k in range(len(range_lr )):
+        # plot the fitting in the range
+
+        range_lr_temp=range_lr[k].astype(int)
+        beta_temp=beta_lr[k]
+
+        for l in range(range_lr_temp.shape[0]):
+
+           range_lr_temp2=range_lr_temp[l]
+           beta_temp2=beta_temp[l]
+
+           idx=np.array(range(range_lr_temp2[0],range_lr_temp2[1]))
+           #gen_lor_amp(idx,beta_tmp[k])
+
+           plt.plot(f_sup[idx],fit_fun(idx,beta_temp2)+mean_level[idx])
+
+
+
+
+
+        if range_lr.ndim==1:
+            range_lr_temp=range_lr
+        else:
+            range_lr_temp=range_lr[k]
+
+        #range_lr_temp=range_lr_temp.reshape(int(range_lr_temp.size/2),2)
+
+        for l in range(range_lr_temp.shape[0]):
+
+            if range_lr_temp.ndim==1:
+                range_lr_temp2=range_lr_temp
+            else:
+                if range_lr_temp.shape[0]==1:
+                    range_lr_temp2=range_lr_temp.reshape(2)
+                    beta_arr=beta_tmp[0][0]
                 else:
-                    range_lr_temp=range_lr[k]
-                
-                #range_lr_temp=range_lr_temp.reshape(int(range_lr_temp.size/2),2)
-                
-                for l in range(range_lr_temp.shape[0]):
-                    
-                    if range_lr_temp.ndim==1:
-                        range_lr_temp2=range_lr_temp
-                    else:
-                        if range_lr_temp.shape[0]==1:
-                            range_lr_temp2=range_lr_temp.reshape(2)
-                            beta_arr=beta_tmp[0][0]
-                        else:
-                            range_lr_temp2=range_lr_temp[l].reshape(2)
-                            beta_arr=beta_tmp[l][0]
-                             
-                    idx=np.array(range(range_lr_temp2[0],range_lr_temp2[1]))
-                    #gen_lor_amp(idx,beta_tmp[k])
-                    
-                    plt.plot(f_sup[idx],fit_fun(idx,beta_arr)+mean_level[idx])
-                                        
+                    range_lr_temp2=range_lr_temp[l].reshape(2)
+                    beta_arr=beta_tmp[l][0]
+
+            idx=np.array(range(range_lr_temp2[0],range_lr_temp2[1]))
+            #gen_lor_amp(idx,beta_tmp[k])
+
+            plt.plot(f_sup[idx],fit_fun(idx,beta_arr)+mean_level[idx])
+
 
 
 

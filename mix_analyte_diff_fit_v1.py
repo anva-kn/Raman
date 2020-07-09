@@ -127,7 +127,7 @@ rmse_mg = np.sqrt(mean_squared_error(data_mean_mg, data_mean_mg_smoothed))
 
 #<-----------------Detecting points that are above interpolated savgol_filter curve-----
 Peak = namedtuple('Peak', ['index_pos', 'value'])
-temp_list = []  # Create temproray namedtuple to store position of the peak and value of the peak
+temp_list = []  # Create temprorary namedtuple to store position of the peak and value of the peak
 for index, (value, value_error, value_error_abs) in enumerate(zip(data_mean_ace_mix_1, error_ace_mix_v1, error_ace_abs_mix_v1)):
     if (value_error_abs > rmse_ace_mix_v1) and value_error > 0:
         temp_peak = Peak(index, value)
