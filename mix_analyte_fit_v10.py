@@ -10,11 +10,37 @@ from scipy.optimize import minimize
 from scipy.optimize import curve_fit
 import math
 from math import pi
-from scipy.interpolate import interp1d, UnivariateSpline
+import scipy.interpolate as si
+
+#---------------------------------------------------
+
+from patsy import dmatrix
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+
+# Generating cubic spline with 3 knots at 25, 40 and 60
+transformed_x = dmatrix("bs(train, knots=(25,40,60), degree=3, include_intercept=False)", {"train": train_x},return_type='dataframe')
+
+# Fitting Generalised linear model on transformed dataset
+fit1 = sm.GLM(train_y, transformed_x).fit()
+
+# Generating cubic spline with 4 knots
+transformed_x2 = dmatrix("bs(train, knots=(25,40,50,65),degree =3, include_intercept=False)", {"train": train_x}, return_type='dataframe')
+
+# Fitting Generalised linear model on transformed dataset
+fit2 = sm.GLM(train_y, transformed_x2).fit()
+
+# Predictions on both splines
+pred1 = fit1.predict(dmatrix("bs(valid, knots=(25,40,60), include_intercept=False)", {"valid": valid_x}, return_type='dataframe'))
+pred2 = fit2.predict(dmatrix("bs(valid, knots=(25,40,50,65),degree =3, include_intercept=False)", {"valid": valid_x}, return_type='dataframe'))
+
+
+#----------------------------------------------------------
 
 #import ste_model_spectrum.py
 
-from ste_model_spectrum_v4 import *
+# from ste_model_spectrum_v4 import *
+from ste_model_spectrum_v5 import *
 
 res=964
 dim_s=100
@@ -53,11 +79,191 @@ win_small=int(slide_win/25)
 # choose peaks below threshould 
 # fit and store
 
+x_data=f_sup
+y_data=space_mean
+
+y_hat=np.ones(res)*np.min(y_data)
+
+# eventually we want the proceduce to converge
+
+num_th=5
+
+interpol_pos = []
+interpol_mse = []
+# interpol_pos.append([0,np.argmin(peak_est),res-1])
+interpol_pos = interpol_pos + [0,np.argmin(y_data),res-1]
+interpol_mse = interpol_mse+[1000, 1000 , 1000 ]
+#
+plt.plot(x_data,y_data)
+
+# random restarts?
+
+nu=0.01
+
+slide_win=int(res/num_th)
+
+for j in range(num_th):
+    
+    # find the points that minimizes the variance of the data minus spline interpolation     
+    # scan all points, who cares
+    idx_left=list(set(range(res)) - set(interpol_pos))
+    
+    #for i in range(int(y_data.shape[0]/slide_win)):
+    for i in range(2*int(y_data.shape[0]/slide_win)):
+        
+        # slide of half of the window at each time        
+        # y_data_win=y_data[int(i*(slide_win/2)):int(i*(slide_win/2)+(slide_win))].copy()
+        # x_data_win=x_data[int(i*(slide_win/2)):int(i*(slide_win/2)+(slide_win))].copy()
+        
+        # y_hat_win=y_hat[int(i*(slide_win/2)):int(i*(slide_win/2)+(slide_win))]
+        
+        min_pos=0
+        min_mse=max(interpol_mse)
+
+        tmp_interpol_pos=list(set(range(int(i*(slide_win/2)),min(int(i*(slide_win/2)+(slide_win)),res))) - set(interpol_pos))
+        
+        for k in range(len(tmp_interpol_pos)):
+                        
+            tmp_pos=np.concatenate((interpol_pos,[tmp_interpol_pos[k]]))
+            tmp_pos.sort()
+            
+            y_hat = si.interp1d(x_data[tmp_pos],y_data[tmp_pos])(x_data)
+            
+            # generalize to any loss        
+            # tmp_mse=np.var(y_hat-y_data) 
+            tmp_mse=(1-nu)*np.dot((y_hat-y_data>0),np.abs((y_hat-y_data)))+nu*np.var(y_hat-y_data)
+            
+            # update the minimum
+            if tmp_mse<min_mse:
+                min_pos = tmp_interpol_pos[k]
+                min_mse = tmp_mse
+        
+        interpol_pos.append(min_pos)
+        #interpol_pos.sort()
+        interpol_mse.append(min_mse)
+        
+        unique_pos=np.array([int(interpol_pos.index(x)) for x in set(interpol_pos)])
+        interpol_pos=list(np.array(interpol_pos)[unique_pos.astype(int)])
+        interpol_mse=list(np.array(interpol_mse)[unique_pos.astype(int)])   
+        
+        # sort points
+        sort_pos=np.argsort(interpol_pos)
+        interpol_pos=list(np.array(interpol_pos)[sort_pos.astype(int)])
+        interpol_mse=list(np.array(interpol_mse)[sort_pos.astype(int)])
+            
+        # remove points that are too close         
+            
+    y_hat = si.interp1d(x_data[interpol_pos],y_data[interpol_pos])(x_data)
+    
+    
+    y_bsp = si.CubicSpline(x_data[interpol_pos], y_data[interpol_pos])(x_data)
+
+    y_bsp = np.poly1d(np.polyfit(x_data[interpol_pos], y_data[interpol_pos], 4) )(x_data)
+
+    y_bsp=si.interp1d(x_data[interpol_pos],y_data[interpol_pos], kind='cubic')(x_data)
+    
+    # plt.plot(x_data,y_data)
+    plt.plot(x_data,y_hat)
+    plt.plot(x_data,y_bsp)
+
+        
+
+    
+
+# # remove points that are too close? 
+# # look at average distance and remove points that are too close
+
+# # now pick the min error and smooth out with a spline
+
+# pos_bsp=interpol_pos[:np.argmin(interpol_mse)]
+
+# pos_bsp.sort()
+
+# y_bsp=si.interp1d(x_data[pos_bsp],y_data[pos_bsp], kind='cubic')(x_data)
+
+
+# x = np.arange(0, 2*np.pi+np.pi/4, 2*np.pi/8)
+# y = np.sin(x)
+
+# tck = si.splrep(x_data[pos_bsp], y_data[pos_bsp], s=0)
+# xnew = np.arange(0, 2*np.pi, np.pi/50)
+# ynew = interpolate.splev(xnew, tck, der=0)
+
+
+# y_bsp=si.BSpline(x_data[pos_bsp],y_data[pos_bsp],2)(x_data)
+
+# plt.plot(x_data,y_data)
+# plt.plot(x_data,y_bsp)
+
+
+
+# spl = si.splrep(x_data[pos_bsp],y_data[pos_bsp])
+
+# spl(x_data)
+
+# si.splev
+
+
+# nsplrep(t, x, k=3)
+
+# pos_bsp=interpol_pos[:np.argmin(interpol_mse)]
+
+# pos_bsp
+
+
+# spl = BSpline(t, c, k)
+
+
+
+# splrep(t, x, k=3)
+
+
+
+# pos_bsp
+
+
+# spl = BSpline(t, c, k)
+
+# #-----------------------------------------
+
+# plt.plot(x_data[tmp_pos],y_hat,'*-')
+
+
+# ind_poly=range(res)
+    
+# mean_level=fit_florescence(x_data,y_data,ind_poly,10**-3)
+    
+#     if False:
+#         plt.plot(x_data,y_data)
+#         plt.plot(x_data,mean_level)
+            
+#     # update the interpolation as you identify peaks
+#     #th_vec=np.linspace(-np.sort(-(y_data-mean_level))[min_peak_width**2],0,num_th+1)
+    
+#     th_vec=np.geomspace(-np.sort(-(y_data-mean_level))[min_peak_width**2],10**-3,num_th+1)
+    
+#     fitting_data=np.empty(num_th,dtype=object)
+    
+    
+    
+# plt.plot(x_data,y_data)
+# plt.plot(x_data,y_spline)
+
+
+# repeat interpolate-remove 10 times
+
+
+
+
 if False:
+    x_data=f_sup
+    y_data=space_mean
     plt.plot(x_data,y_data)
     plt.plot(x_data,poly_interp)
     plt.plot(x_data,y_interp)
     plt.plot(x_data[idx_pos_min],y_data[idx_pos_min],'*')
+
+
 
 
 # it's better to smooth outside and find the peak per smoothing function
@@ -65,7 +271,7 @@ space_mean=sci.savgol_filter(np.squeeze(space_mean), window_length = 2*int(win_s
 
 peak_tol=0.9
 
-fitting_data=identify_fitting_win_up(f_sup,space_mean,num_th,num_th,gen_lor_amp,init_lor,peak_tol)
+fitting_data=identify_fitting_win_up(f_sup,space_mean,num_th,num_th,gen_lor_amp,init_lor,peak_tol,min_peak_width)
 
 
 if False:
@@ -75,77 +281,63 @@ if False:
         mean_level = np.squeeze(np.array(fitting_data[j]['lin_interp']))
 
         range_lr = fitting_data[j]['range_peak']
-        plt.figure('ACE')
-s = UnivariateSpline(f_sup, data_mean_ace, s=5)
-xs = np.linspace(0, 963, 200)
-ys = s(xs)
-
-plt.plot(f_sup, data_mean[0])
-#plt.plot(xs, ys, 'o')
-plt.show()
         
-if range_lr==0:
-    print('Th',j,'has to peak')
+        
+        if range_lr==0:
+            print('Th',j,'has to peak')
+        
+        else:             
+            #
+            plt.plot(f_sup,mean_level,'--b')
 
-else:
-    #
-    plt.plot(f_sup,mean_level,'--')
-
-    beta_lr =  fitting_data[j]['beta_peak']
-    for k in range(len(range_lr )):
-        # plot the fitting in the range
-
-        range_lr_temp=range_lr[k].astype(int)
-        beta_temp=beta_lr[k]
-
-        for l in range(range_lr_temp.shape[0]):
-
-           range_lr_temp2=range_lr_temp[l]
-           beta_temp2=beta_temp[l]
-
-           idx=np.array(range(range_lr_temp2[0],range_lr_temp2[1]))
-           #gen_lor_amp(idx,beta_tmp[k])
-
-           plt.plot(f_sup[idx],fit_fun(idx,beta_temp2)+mean_level[idx])
-
-
-
-
-
-        if range_lr.ndim==1:
-            range_lr_temp=range_lr
-        else:
-            range_lr_temp=range_lr[k]
-
-        #range_lr_temp=range_lr_temp.reshape(int(range_lr_temp.size/2),2)
-
-        for l in range(range_lr_temp.shape[0]):
-
-            if range_lr_temp.ndim==1:
-                range_lr_temp2=range_lr_temp
-            else:
-                if range_lr_temp.shape[0]==1:
-                    range_lr_temp2=range_lr_temp.reshape(2)
-                    beta_arr=beta_tmp[0][0]
+            beta_lr =  fitting_data[j]['beta_peak']            
+            for k in range(len(range_lr )):
+                # plot the fitting in the range 
+                
+                range_lr_temp=range_lr[k].astype(int)
+                beta_temp=beta_lr[k]
+                 
+                for l in range(range_lr_temp.shape[0]):
+                
+                   range_lr_temp2=range_lr_temp[l]
+                   beta_temp2=beta_temp[l]
+                   
+                   idx=np.array(range(range_lr_temp2[0],range_lr_temp2[1]))
+                   #gen_lor_amp(idx,beta_tmp[k])
+                        
+                   plt.plot(f_sup[idx],fit_fun(idx,beta_temp2)+mean_level[idx],'-k')
+                                                             
+                
+                if range_lr.ndim==1:
+                    range_lr_temp=range_lr
                 else:
-                    range_lr_temp2=range_lr_temp[l].reshape(2)
-                    beta_arr=beta_tmp[l][0]
-
-            idx=np.array(range(range_lr_temp2[0],range_lr_temp2[1]))
-            #gen_lor_amp(idx,beta_tmp[k])
-
-            plt.plot(f_sup[idx],fit_fun(idx,beta_arr)+mean_level[idx])
-
-
-
+                    range_lr_temp=range_lr[k]
+                
+                #range_lr_temp=range_lr_temp.reshape(int(range_lr_temp.size/2),2)
+                
+                for l in range(range_lr_temp.shape[0]):
+                    
+                    if range_lr_temp.ndim==1:
+                        range_lr_temp2=range_lr_temp
+                    else:
+                        if range_lr_temp.shape[0]==1:
+                            range_lr_temp2=range_lr_temp.reshape(2)
+                            beta_arr=beta_tmp[0][0]
+                        else:
+                            range_lr_temp2=range_lr_temp[l].reshape(2)
+                            beta_arr=beta_tmp[l][0]
+                             
+                    idx=np.array(range(range_lr_temp2[0],range_lr_temp2[1]))
+                    #gen_lor_amp(idx,beta_tmp[k])
+                    
+                    plt.plot(f_sup[idx],fit_fun(idx,beta_arr)+mean_level[idx])
+                                        
 
  
 th_10=np.linspace(-np.sort(-(y_data_win-mean_level_win))[int(win_small)],0,11)
 
 
 mse_poly= np.var(y_data_win[ind_poly]-mean_level_win[ind_poly])
-
-
 
 
 
