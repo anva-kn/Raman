@@ -124,10 +124,10 @@ plt.figure('raw data and peaks')
 labels = ['ACE', 'MG', 'mix1_1', 'mix1_2', 'mix2_1', 'mix2_2']
 peak_labels = ['ACE_peak', 'MG_peak', 'mix1_1_peak', 'mix1_2_peak', 'mix2_1_peak', 'mix2_2_peak']
 
-for data_mean, data_mean_smoothed, label, peak_f, peak_val, peak_label in zip(data_mean, data_mean_smoothed, labels, peak_frequencies, peak_values, peak_labels):
-   plt.plot(f_sup, data_mean, '-', label=label)
-   plt.plot(f_sup, data_mean_smoothed, '-', label=label)
-   plt.plot(peak_f, peak_val, '*', label=peak_label)
+# for data_mean, data_mean_smoothed, label, peak_f, peak_val, peak_label in zip(data_mean, data_mean_smoothed, labels, peak_frequencies, peak_values, peak_labels):
+plt.plot(f_sup, data_mean[0], '-', label=label)
+plt.plot(f_sup, data_mean_smoothed[0], '-', label=label)
+plt.plot(peak_f[0], peak_val[0], '*', label=peak_label)
 
 plt.legend()
 plt.show()
