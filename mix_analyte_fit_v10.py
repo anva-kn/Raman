@@ -18,29 +18,29 @@ from patsy import dmatrix
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 
-# Generating cubic spline with 3 knots at 25, 40 and 60
-transformed_x = dmatrix("bs(train, knots=(25,40,60), degree=3, include_intercept=False)", {"train": train_x},return_type='dataframe')
-
-# Fitting Generalised linear model on transformed dataset
-fit1 = sm.GLM(train_y, transformed_x).fit()
-
-# Generating cubic spline with 4 knots
-transformed_x2 = dmatrix("bs(train, knots=(25,40,50,65),degree =3, include_intercept=False)", {"train": train_x}, return_type='dataframe')
-
-# Fitting Generalised linear model on transformed dataset
-fit2 = sm.GLM(train_y, transformed_x2).fit()
-
-# Predictions on both splines
-pred1 = fit1.predict(dmatrix("bs(valid, knots=(25,40,60), include_intercept=False)", {"valid": valid_x}, return_type='dataframe'))
-pred2 = fit2.predict(dmatrix("bs(valid, knots=(25,40,50,65),degree =3, include_intercept=False)", {"valid": valid_x}, return_type='dataframe'))
+# # Generating cubic spline with 3 knots at 25, 40 and 60
+# transformed_x = dmatrix("bs(train, knots=(25,40,60), degree=3, include_intercept=False)", {"train": train_x},return_type='dataframe')
+#
+# # Fitting Generalised linear model on transformed dataset
+# fit1 = sm.GLM(train_y, transformed_x).fit()
+#
+# # Generating cubic spline with 4 knots
+# transformed_x2 = dmatrix("bs(train, knots=(25,40,50,65),degree =3, include_intercept=False)", {"train": train_x}, return_type='dataframe')
+#
+# # Fitting Generalised linear model on transformed dataset
+# fit2 = sm.GLM(train_y, transformed_x2).fit()
+#
+# # Predictions on both splines
+# pred1 = fit1.predict(dmatrix("bs(valid, knots=(25,40,60), include_intercept=False)", {"valid": valid_x}, return_type='dataframe'))
+# pred2 = fit2.predict(dmatrix("bs(valid, knots=(25,40,50,65),degree =3, include_intercept=False)", {"valid": valid_x}, return_type='dataframe'))
 
 
 #----------------------------------------------------------
 
 #import ste_model_spectrum.py
 
-# from ste_model_spectrum_v4 import *
-from ste_model_spectrum_v5 import *
+from ste_model_spectrum_v4 import *
+# from ste_model_spectrum_v5 import *
 
 res=964
 dim_s=100
