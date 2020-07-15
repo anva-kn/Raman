@@ -125,9 +125,18 @@ labels = ['ACE', 'MG', 'mix1_1', 'mix1_2', 'mix2_1', 'mix2_2']
 peak_labels = ['ACE_peak', 'MG_peak', 'mix1_1_peak', 'mix1_2_peak', 'mix2_1_peak', 'mix2_2_peak']
 
 # for data_mean, data_mean_smoothed, label, peak_f, peak_val, peak_label in zip(data_mean, data_mean_smoothed, labels, peak_frequencies, peak_values, peak_labels):
-plt.plot(f_sup, data_mean[0], '-', label=label)
-plt.plot(f_sup, data_mean_smoothed[0], '-', label=label)
-plt.plot(peak_f[0], peak_val[0], '*', label=peak_label)
+index_ace = 0
+index_mg = 1
+index_mix = 2
+plt.plot(f_sup, data_mean[index_ace]/max(data_mean[index_ace]), '-', label=labels[index_ace])
+plt.plot(f_sup, data_mean[index_mg]/max(data_mean[index_mg]), '-', label=labels[index_mg])
+# plt.plot(f_sup, data_mean_smoothed[index_ace]/max(data_mean_smoothed[index_ace]), '-', label=labels[index_ace])
+# plt.plot(f_sup, data_mean_smoothed[index_mg]/max(data_mean_smoothed[index_mg]), '-', label=labels[index_mg])
+plt.plot(peak_frequencies[index_ace], peak_values[index_ace]/max(data_mean[index_ace]), '*', label=peak_labels[index_ace])
+plt.plot(peak_frequencies[index_mg], peak_values[index_mg]/max(data_mean[index_mg]), '*', label=peak_labels[index_mg])
+plt.plot(f_sup, data_mean[index_mix]/max(data_mean[index_mix]), '-', label=labels[index_mix])
+plt.plot(peak_frequencies[index_mix], peak_values[index_mix]/max(data_mean[index_mix]), '*', label=peak_labels[index_mix])
+
 
 plt.legend()
 plt.show()
