@@ -119,7 +119,6 @@ def cos_win2(x_data,beta):
     yvec=[cos_window2(t,L,M,R,o,al,be)  for t in range(x_data.size)]
     return yvec
 
-
 #-----------------------------------------------------------------------------
 # init functions
 
