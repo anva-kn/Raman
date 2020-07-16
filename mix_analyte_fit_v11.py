@@ -1,6 +1,8 @@
 from itertools import islice
 
 import matplotlib.pyplot as plt
+
+import pandas as pd
 import numpy as np
 from scipy.signal import hilbert, find_peaks
 import pylab as p
@@ -38,8 +40,9 @@ import statsmodels.formula.api as smf
 
 #import ste_model_spectrum.py
 
+# from ste_model_spectrum_v4 import *
 from ste_model_spectrum_v4 import *
-# from ste_model_spectrum_v5 import *
+from ste_model_spectrum_v5 import *
 
 res=964
 dim_s=100
@@ -93,19 +96,32 @@ interpol_mse = []
 interpol_pos = interpol_pos + [0,np.argmin(y_data),res-1]
 interpol_mse = interpol_mse+[1000, 1000 , 1000 ]
 #
-plot(x_data, y_data)
 
 # random restarts?
 
 nu=0.01
+min_peak_width=4
+peak_tol = 0.99
 
 slide_win=int(res/num_th)
+
+fitting_data=np.empty(num_th,dtype=object)
+
+init_fit_fun = init_pseudo_voig
+loss_peak = mse_loss
+fit_fun = pseudo_voig
+
 
 for j in range(num_th):
     
     # find the points that minimizes the variance of the data minus spline interpolation     
     # scan all points, who cares
     idx_left=list(set(range(res)) - set(interpol_pos))
+    
+    # lists to store
+    mse_comp = []
+    range_comp = []
+    beta_comp = []
     
     #for i in range(int(y_data.shape[0]/slide_win)):
     for i in range(2*int(y_data.shape[0]/slide_win)):
@@ -155,19 +171,206 @@ for j in range(num_th):
     y_hat = si.interp1d(x_data[interpol_pos],y_data[interpol_pos])(x_data)
     
     
-    y_bsp = si.CubicSpline(x_data[interpol_pos], y_data[interpol_pos])(x_data)
+    #y_bsp = si.CubicSpline(x_data[interpol_pos], y_data[interpol_pos])(x_data)
 
-    y_bsp = np.poly1d(np.polyfit(x_data[interpol_pos], y_data[interpol_pos], 4) )(x_data)
+    y_bsp = np.poly1d(np.polyfit(x_data[interpol_pos], y_data[interpol_pos], 5) )(x_data)
 
-    y_bsp=si.interp1d(x_data[interpol_pos],y_data[interpol_pos], kind='cubic')(x_data)
+    #y_bsp=si.interp1d(x_data[interpol_pos],y_data[interpol_pos], kind='cubic')(x_data)
+    while False:
+        plt.plot(x_data,y_data)
+        plt.plot(x_data,y_bsp)
+        plt.plot(x_data,y_bsp)
     
-    # plt.plot(x_data,y_data)
-    plot(x_data, y_hat)
-    plot(x_data, y_bsp)
+    mean_level=y_bsp 
+            
+    #--------------------------------------------------------------------
+    #   find when you acre over the mean level
+    #--------------------------------------------------------------------
+    th=np.sqrt(np.var(y_data-mean_level))
+    
+    pos=np.array(np.where((y_data-mean_level)<th)[0])
+        
+    while False:
+        plt.plot(x_data,y_data)
+        plt.plot(x_data,y_bsp)
+        plt.plot(x_data[pos],y_bsp[pos],'*')
+    #--------------------------------------------------------------------
+    #   merge the points
+    #--------------------------------------------------------------------
+    
+    diff_pos=pos[1:]-pos[:-1]-1            
+    jumps=np.where(diff_pos>0)[0]
+        
+    #if the final element is res, the add a jomp an the end
+    if pos[-1]==res-1:
+        jumps=np.append(jumps,pos.shape[0]-1)
+    
+    final_lb=[]
+    final_rb=[]
+    
+    if jumps.size==0:            
+            final_lb.append(pos[0])
+            final_rb.append(pos[-1])
+    else:                    
+                        
+            final_lb.append(pos[0])
+            final_rb.append(pos[jumps[0]])
+            
+            k=0
+            while k<jumps.shape[0]-1:
+                # 
+                final_lb.append(pos[jumps[k]+1])
+                # go to the next gap                
+                k=k+1
+                final_rb.append(pos[jumps[k]])
+                    
+    # add the first and the last intervals 
+    
+    idx_lr=np.zeros([2,len(final_rb)])
+    idx_lr[0]=np.array(final_lb)
+    idx_lr[1]=np.array(final_rb)
+    idx_lr.astype(int)
+    idx_lr=idx_lr.T
+    
+    # merge intervals 
+    # remove the one intervals
+    idx_lr=idx_lr[np.where(idx_lr[:,1]-idx_lr[:,0]>2)[0],:]        
 
+    merged = recursive_merge(idx_lr.tolist())
+    idx_lr = np.array(merged).astype(int)
+    
+    idx_lr_poly = idx_lr
+    
+    #-------------------------------------------------------------------
+    # peak fitting 
+    #-------------------------------------------------------------------
+
+    # first obtain the complement of the intervals
+    
+    if idx_lr.size==0:
+        # idx_lr_comp=np.array(range(i,i+int(slide_win)-1))
+        idx_lr_comp=np.array([0,slide_win-1])
+        idx_lr_comp=idx_lr_comp.reshape([1,2])
+    else:
+        idx_lr_comp=[] 
+        
+        # include the first interval?
+        if  idx_lr[0,0]>0:
+            idx_lr_comp.append([0,idx_lr[0,0]])
+    
+        for k in range(1,idx_lr.shape[0]):
+            idx_lr_comp.append([idx_lr[k-1,1],idx_lr[k,0]])
+        
+        # include the last interval
+        if  idx_lr[-1,1]<int(res)-1:
+            idx_lr_comp.append([idx_lr[-1,1],res])
+                
+    idx_lr_comp=np.array(idx_lr_comp).reshape(int(np.size(idx_lr_comp)/2),2)            
+            
+    # remove the intervals that are shorter than the number of parameters, 
+    for k in range(idx_lr_comp.shape[0]):
+        # expand the fitting window
+        idx_lr_comp[k]=find_mul_peak_sym_supp(idx_lr_comp[k],y_data,mean_level,peak_tol)
+            
+    idx_lr_comp=np.array(recursive_merge(list(idx_lr_comp)))
+          
+    # remove below min peak width
+    
+    idx_lr_comp=np.array(idx_lr_comp[np.where(idx_lr_comp[:,1]-idx_lr_comp[:,0]>min_peak_width)[0],:])
+    idx_lr_comp.astype(int)                        
+    
+    # this variable is updated at each threshold window
+    mse_comp = []
+    range_comp = []
+    beta_comp = []
+        
+    # fit the peaks recursively
+    idx_lr_comp=list(idx_lr_comp)
+
+    while len(idx_lr_comp)>0:
+        
+        idx_lr_tmp=idx_lr_comp.pop()
+        
+        print('Now processing the range',idx_lr_tmp[0],'--',idx_lr_tmp[1])
+        
+        # peak_tol must be set dynamically, based on the value of the max, but how?        
+        idx_comp_lr=find_mul_peak_sym_supp(idx_lr_tmp,y_data,mean_level,peak_tol)
+        
+        idx_comp = np.array(range(idx_comp_lr[0],idx_comp_lr[1]+1))
+        
+        x_rec = x_data[idx_comp]
+        y_rec = y_data[idx_comp]
+        mean_rec =  mean_level[idx_comp]
+        
+        y_up_rec=y_rec - mean_rec 
+        
+        peak_pos = idx_comp_lr[0]+np.argmax(y_up_rec)
+        
+        peak_lr_win = find_peak_supp(peak_pos,int(idx_lr_tmp[0]),int(idx_lr_tmp[1]), y_data,peak_tol)
+                        
+        while False:
+            # check peaks
+            plt.plot(x_data,y_data)
+            plt.plot(x_rec ,y_rec )
+            plt.plot(x_rec,mean_rec)
+            plt.plot(x_data[range(peak_lr_win[0],peak_lr_win[1])],y_data[range(peak_lr_win[0],peak_lr_win[1])],'*')
+                    
+        y_up_rec = y_rec -mean_rec 
+            
+        # fitting the peak        
+        y_data_temp = y_data[np.array(range(peak_lr_win[0],peak_lr_win[1]))]
+        x_data_temp = x_data[np.array(range(peak_lr_win[0],peak_lr_win[1]))]
+        mean_level_temp = mean_level[np.array(range(peak_lr_win[0],peak_lr_win[1]))]
         
 
+        # from ste_model_spectrum_v5 import *        
+        # init_fit_fun = init_pseudo_voig
+        # loss_peak = mse_loss
+        # fit_fun = pseudo_voig
     
+        beta_init=init_fit_fun(x_data_temp,y_data_temp-mean_level_temp)
+                
+        result = minimize(loss_peak,beta_init, args=(x_data_temp,y_data_temp-mean_level_temp,fit_fun), tol=1e-12)    
+        beta_hat_fit =result.x
+        mse_fit =result.fun
+                
+        if False:
+            plt.plot(x_data_temp,y_data_temp)
+            plt.plot(x_data_temp,mean_level_temp)
+            #plt.plot(x_data_temp,fit_fun(x_data_temp,beta_init)+mean_level_temp)
+            plt.plot(x_data_temp,fit_fun(x_data_temp,beta_hat_fit)+mean_level_temp,'*-')
+                
+        # now add head and tail to the list
+        
+        
+        # include the first interval?
+        if  peak_lr_win[0]-idx_lr_tmp[0]>min_peak_width and peak_lr_win[0]<idx_lr_tmp[1]:
+            idx_lr_comp.append(np.array([idx_lr_tmp[0],peak_lr_win[0]]))
+        
+        if idx_lr_tmp[1]-peak_lr_win[1]>min_peak_width and peak_lr_win[1]>idx_lr_tmp[0]:
+            idx_lr_comp.append(np.array([peak_lr_win[1],idx_lr_tmp[1]]))
+                
+        #------------------------------------------
+        # update lists
+        mse_comp.append(result.fun)
+        #range_up.append(peak_l_r_win)
+        range_comp.append(np.array(peak_lr_win))
+        beta_comp.append(np.array(beta_hat_fit))
+        
+    #------------------------------------------
+    # storing bit
+    
+    if range_p.size==0:
+        print('Storing Th',j,'No peak detected')
+        fitting_data[j]=dict( idx_lr_poly = idx_lr_poly, mean_level=mean_level, range_peak = 0 )
+    else:
+        print('Storing Th',j,'Range',range_p[:,0],'--',range_p[:,1])
+        fitting_data[j]=dict( idx_lr_poly = idx_lr_poly , mean_level=mean_level, mse_peak = mse_comp , range_peak = range_comp , beta_peak=beta_comp)
+
+        
+        
+
+    # update 
 
 # # remove points that are too close? 
 # # look at average distance and remove points that are too close
@@ -350,7 +553,7 @@ mse_poly= np.var(y_data_win[ind_poly]-mean_level_win[ind_poly])
 # find the  points in which the 
 
 
-plot(f_sup, space_mean)
+plt.plot(f_sup,space_mean)
 
 
 
@@ -392,19 +595,19 @@ all_win=[]
 
 for i in range(2*int(space_mean.shape[0]/slide_win)):        
     for j in range(1,num_th):
-        peak_l_r_win=np.zeros((1,2))
+        peak_lr_win=np.zeros((1,2))
         # pile all intervals in the smallest threshold and check that everything is fine there
         tmp=np.squeeze(np.array(fitting_data[i,j]['range_peak']))
         if tmp.size>1:
             tmp=tmp.reshape(int(tmp.size/2),2)
             range_lr=np.array(i*int(slide_win/2)+tmp)
             # range_lr=np.array(tmp)
-            # peak_l_r_win.extend(range_lr.tolist())
-            peak_l_r_win=np.concatenate((peak_l_r_win,range_lr),axis=0)
+            # peak_lr_win.extend(range_lr.tolist())
+            peak_lr_win=np.concatenate((peak_lr_win,range_lr),axis=0)
                            
-            peak_l_r_win=peak_l_r_win[1:]
+            peak_lr_win=peak_lr_win[1:]
             
-            sorted_on_start = sorted(peak_l_r_win.tolist())
+            sorted_on_start = sorted(peak_lr_win.tolist())
             
             merged_lr = recursive_merge(sorted_on_start.copy())
              
@@ -416,7 +619,7 @@ for i in range(2*int(space_mean.shape[0]/slide_win)):
             
             
             idx_peaks=np.array(idx_peaks)
-            plot(f_sup[idx_peaks], j + space_mean[idx_peaks], '--')
+            plt.plot(f_sup[idx_peaks],j+space_mean[idx_peaks],'--')
                     
 
 
@@ -426,8 +629,8 @@ for i in range(2*int(space_mean.shape[0]/slide_win)):
 # let's check some peaks
 if False:
     plt.plot(f_sup,space_mean)
-    for j in range(peak_l_r_win.shape[0]):
-        idx_peaks=range(int(peak_l_r_win[j,0]),int(peak_l_r_win[j,1]))
+    for j in range(peak_lr_win.shape[0]):
+        idx_peaks=range(int(peak_lr_win[j,0]),int(peak_lr_win[j,1]))
         plt.plot(f_sup[idx_peaks],j+space_mean[idx_peaks],'--')
 
 
@@ -465,7 +668,7 @@ for i in range(2*int(space_mean.shape[0]/slide_win)):
 # ----------------------------------------------------------------------------
 
 
-peak_l_r_win=np.zeros((1,2))
+peak_lr_win=np.zeros((1,2))
 
 for i in range(2*int(space_mean.shape[0]/slide_win)):        
         j=9
@@ -479,8 +682,8 @@ for i in range(2*int(space_mean.shape[0]/slide_win)):
             tmp=tmp.reshape(int(tmp.size/2),2)
             range_lr=np.array(i*int(slide_win/2)+tmp)
             # range_lr=np.array(tmp)
-            # peak_l_r_win.extend(range_lr.tolist())
-            peak_l_r_win=np.concatenate((peak_l_r_win,range_lr),axis=0)
+            # peak_lr_win.extend(range_lr.tolist())
+            peak_lr_win=np.concatenate((peak_lr_win,range_lr),axis=0)
             
         
                     
@@ -496,7 +699,7 @@ for i in range(2*int(space_mean.shape[0]/slide_win)):
 # choose the number of peaks you want and keep the N largest peaks.
 # then merge up the intervals so that you preserve those peaks
 
-peak_l_r_win=np.zeros((1,2))
+peak_lr_win=np.zeros((1,2))
 beta_win=np.zeros((1,4))
 rank_win= np.zeros((1,1))
 y_data=space_mean
@@ -519,10 +722,10 @@ for i in range(2*int(space_mean.shape[0]/slide_win)):
             range_tmp=np.squeeze(np.array(fitting_data[i,j]['range_peak']))
             range_tmp.reshape(int(range_tmp.size/2),2)
             
-            peak_l_r_win=np.concatenate((peak_l_r_win,range_lr),axis=0)
+            peak_lr_win=np.concatenate((peak_lr_win,range_lr),axis=0)
             
 
-peak_l_r_win=peak_l_r_win[1:]
+peak_lr_win=peak_lr_win[1:]
             
 
 
@@ -579,9 +782,9 @@ for i in range(2*int(space_mean.shape[0]/slide_win)):
         tmp=np.squeeze(np.array(fitting_data[i,j]['range_peak']))
 
 
-peak_l_r_win=peak_l_r_win[1:]
+peak_lr_win=peak_lr_win[1:]
 
-sorted_on_start = sorted(peak_l_r_win.tolist())
+sorted_on_start = sorted(peak_lr_win.tolist())
 
 merged = recursive_merge(sorted_on_start.copy())
 
@@ -598,8 +801,8 @@ if False:
     plt.plot(f_sup,space_mean)
     plt.plot(f_sup[idx_peaks],space_mean[idx_peaks],'--')
 
-peak_l_r_win.append(range_lr.tolist()) 
-peak_l_r_win = np.array(recursive_merge(peak_l_r_win.tolist())).astype(int)    
+peak_lr_win.append(range_lr.tolist()) 
+peak_lr_win = np.array(recursive_merge(peak_lr_win.tolist())).astype(int)    
 
 
 
@@ -630,31 +833,31 @@ for i in range(2*int(space_mean.shape[0]/slide_win)):
 # #-------------------------------------------------------------------------------
     
     
-#             peak_l_r_win=np.zeros([peaks.size,2])
+#             peak_lr_win=np.zeros([peaks.size,2])
     
 #     for i in range(peaks.size):     
 #         [l_win, r_win]=find_win_supp(peaks[i],l_ips[i],r_ips[i], y_up_sub,1)
-#         peak_l_r_win[i]=[l_win, r_win]
+#         peak_lr_win[i]=[l_win, r_win]
 
 #         # merge intervals                       
     
     
     
     
-#         peak_l_r_win.append(range_lr.tolist()) 
+#         peak_lr_win.append(range_lr.tolist()) 
         
     
         
 #         # this is too tricky to implement atm         
 #         for i in range(peaks.size):     
 #             [l_win, r_win]=find_win_supp(peaks[i],l_ips[i],r_ips[i], y_up_sub)
-#             peak_l_r_win[i]=[l_win, r_win]
+#             peak_lr_win[i]=[l_win, r_win]
     
 #         # for i in range(peaks.size):                 
-#         #     peak_l_r_win[i]=[l_ips[i], r_ips[i]]
+#         #     peak_lr_win[i]=[l_ips[i], r_ips[i]]
     
 #         # merge intervals                       
-#         peak_l_r_win = np.array(recursive_merge(peak_l_r_win.tolist())).astype(int)
+#         peak_lr_win = np.array(recursive_merge(peak_lr_win.tolist())).astype(int)
         
     
     
@@ -719,12 +922,12 @@ data_ace_temp[i]=dataACE[align_end]
 
 
 while False:
-    plot(f_ACE, dataACE, label='orig')
-    plot(f_sup, data_ace_temp, label='temp')
-    plot(f_sup, data_mean[0], label='data')
+    plt.plot(f_ACE, dataACE,label='orig')
+    plt.plot(f_sup, data_ace_temp,label='temp')
+    plt.plot(f_sup, data_mean[0],label='data')
     
-    legend()
-    show()
+    plt.legend()
+    plt.show()
 
 #------------------------------------------------------------------------------
 
@@ -733,15 +936,15 @@ data_mean[0]=data_ace_temp
 
 #------------------------------------------------------------------------------
 
-figure('raw data')
+plt.figure('raw data')
 labels = ['ACE', 'MG', 'mix1_1','mix1_2','mix2_1','mix2_2']
 
 
 for data_mean, label in zip(data_mean, labels):
-    plot(f_sup, data_mean, label=label)
+    plt.plot(f_sup, data_mean, label=label)
 
-legend()
-show()
+plt.legend()
+plt.show()
 
 num_peaks=10
 
@@ -766,7 +969,7 @@ vecM=[comp_rangeM, comp_beta_gaussM, comp_beta_lorM, comp_beta_gen_lorM, comp_be
 
 recap_spectrum(f_sup,data_MG_mean_smooth,num_peaks,*vecM)
 
-plot(f_sup, data_MG_mean_smooth)
+plt.plot(f_sup,data_MG_mean_smooth)
 
 #------------------------------------------------------------------------------
 
@@ -784,15 +987,15 @@ recap_spectrum(f_sup,data_ACE_mean_smooth,num_peaks, comp_rangeA, comp_beta_gaus
 
 # show the smoothing
 while False:
-    figure("Smoothing")
-    plot(f_sup, data_MG_sparse)
-    plot(f_sup, data_MG_mean_smooth)
+    plt.figure("Smoothing")
+    plt.plot(f_sup,data_MG_sparse)
+    plt.plot(f_sup,data_MG_mean_smooth)
 
 
 while False:
-    figure("Smoothing")
-    plot(data_ACE_sparse)
-    plot(data_ACE_mean_smooth)
+    plt.figure("Smoothing")
+    plt.plot(data_ACE_sparse)
+    plt.plot(data_ACE_mean_smooth)
     
 
     
@@ -838,7 +1041,7 @@ space_mean=np.mean(data[2],axis=1)
 
 # compare with the previous processing
 
-plot(f_sup, np.mean(data[2], axis=1))
+plt.plot(f_sup,np.mean(data[2],axis=1))
 
 identify_fitting_win_up
 
@@ -878,35 +1081,35 @@ rec22=recap_spectrum(f_sup,data_22_smooth,2*num_peaks,*vec_21)
 recMG=recap_spectrum(f_sup,data_MG_mean_smooth,num_peaks,*vecM)
 recACE=recap_spectrum(f_sup,data_ACE_mean_smooth,num_peaks,*vecA)
 
-plot(rec11, label='11')
-plot(np.mean(data[2], axis=1) - np.mean(data[2]))
-plot(recMG, label='MG')
-plot(recACE, label='ACE')
-legend()
-show()
+plt.plot(rec11,label='11')
+plt.plot(np.mean(data[2],axis=1)-np.mean(data[2]))
+plt.plot(recMG,label='MG')
+plt.plot(recACE,label='ACE')
+plt.legend()
+plt.show()
 
 
 
-plot(rec21, label='21 rec')
-plot(data_21_smooth, '--', label='21')
-plot(np.mean(data[4], axis=1) - np.mean(data[4]))
-plot(recMG, label='MG')
-plot(recACE, label='ACE')
-legend()
-show()
+plt.plot(rec21,label='21 rec')
+plt.plot(data_21_smooth,'--',label='21')
+plt.plot(np.mean(data[4],axis=1)-np.mean(data[4]))
+plt.plot(recMG,label='MG')
+plt.plot(recACE,label='ACE')
+plt.legend()
+plt.show()
 
 
 
-plot(rec22, label='22 rec')
-plot(data_22_smooth, '--', label='22')
-plot(np.mean(data22v1, axis=1), '-.', label='22 orig.')
-plot(np.mean(data[5], axis=1) - np.mean(data[5]))
-plot(np.mean(data22, axis=1) - np.mean(data22))
-plot(data22, '--', label='22')
-plot(recMG, label='MG')
-plot(recACE, label='ACE')
-legend()
-show()
+plt.plot(rec22,label='22 rec')
+plt.plot(data_22_smooth,'--',label='22')
+plt.plot(np.mean(data22v1,axis=1),'-.',label='22 orig.')
+plt.plot(np.mean(data[5],axis=1)-np.mean(data[5]))
+plt.plot(np.mean(data22,axis=1)-np.mean(data22))
+plt.plot(data22,'--',label='22')
+plt.plot(recMG,label='MG')
+plt.plot(recACE,label='ACE')
+plt.legend()
+plt.show()
     
 ####--------------------------------------------------------------------------
 ####--------------------------------------------------------------------------
@@ -929,11 +1132,11 @@ if correlation_approach:
     
     # start with data 15
     
-    plot(np.mean(data11, axis=1) - np.mean(data11), label='v0')
-    plot(np.mean(data11v1, axis=1) - np.mean(data11v1), label='v1')
-    plot(dataMG_hat, label='MG hat')
-    legend()
-    show
+    plt.plot(np.mean(data11,axis=1)-np.mean(data11),label='v0')
+    plt.plot(np.mean(data11v1,axis=1)-np.mean(data11v1),label='v1')
+    plt.plot(dataMG_hat,label='MG hat')
+    plt.legend()
+    plt.show
     
     dataMG_hat=reconstruct_spectrum(f_sup,*vecM)
     dataA_hat=reconstruct_spectrum(f_sup,*vecA)
@@ -964,10 +1167,10 @@ if correlation_approach:
     plot_cor_space=1
     
     if plot_cor_space:
-        figure('Total correlation in space for MG')
-        plot(corr_11MG.reshape(dim_s) - np.mean(corr_11MG.reshape(dim_s)), '*-', label='11-MG')
-        plot(corr_11MGv1.reshape(dim_s) - np.mean(corr_11MGv1.reshape(dim_s)), '*-', label='11-MG-v1')
-        legend()
+        plt.figure('Total correlation in space for MG')
+        plt.plot(corr_11MG.reshape(dim_s)-np.mean(corr_11MG.reshape(dim_s)),'*-',label='11-MG')
+        plt.plot(corr_11MGv1.reshape(dim_s)-np.mean(corr_11MGv1.reshape(dim_s)),'*-',label='11-MG-v1')
+        plt.legend()
         # plt.plot(corr_12MG.reshape(dim_s),'.-',label='12-MG')
         
         # plt.plot(corr_21MG.reshape(dim_s),'|-',label='21-MG')
@@ -975,19 +1178,19 @@ if correlation_approach:
         
         
     
-        legend()
-        show()
+        plt.legend()
+        plt.show()
     
-        figure('Total correlation in space for A')
+        plt.figure('Total correlation in space for A')
         
-        plot(corr_11A.reshape(dim_s), '*-', label='11-A')
-        plot(corr_12A.reshape(dim_s), '.-', label='12-A')
+        plt.plot(corr_11A.reshape(dim_s),'*-',label='11-A')
+        plt.plot(corr_12A.reshape(dim_s),'.-',label='12-A')
         
-        plot(corr_21A.reshape(dim_s), '|-', label='21-A')
-        plot(corr_22A.reshape(dim_s), '+-', label='22-A')
+        plt.plot(corr_21A.reshape(dim_s),'|-',label='21-A')
+        plt.plot(corr_22A.reshape(dim_s),'+-',label='22-A')
     
-        legend()
-        show()
+        plt.legend()
+        plt.show()
     
     
     # average correlation in time
@@ -1003,11 +1206,11 @@ if correlation_approach:
     plot_time_corr=1
     
     if plot_time_corr:
-        plot(time_corr_MG, 'o-', label='MG')
-        plot(time_corr_A, '+-', label='A')
+        plt.plot(time_corr_MG,'o-',label='MG')
+        plt.plot(time_corr_A,'+-',label='A')
         
-        legend()
-        show()
+        plt.legend()
+        plt.show()
         
     
     # average correlation PER PEAK
@@ -1056,46 +1259,46 @@ if correlation_approach:
         mean_corr22A[i]=np.mean(np.dot(dataA_hat[l_win:r_win],data22[l_win:r_win].reshape([r_win-l_win,dim_s])))
         
     corr_peak=1
-    figure('Correlation recap')
+    plt.figure('Correlation recap')
     
     if corr_peak:
         
-        plot(mean_corr11M, '*-', label='M-11')
-        plot(mean_corr12M, '.-', label='M-12')
-        plot(mean_corr21M, '|-', label='M-21')
-        plot(mean_corr22M, '+-', label='M-22')
+        plt.plot(mean_corr11M,'*-',label='M-11')
+        plt.plot(mean_corr12M,'.-',label='M-12')
+        plt.plot(mean_corr21M,'|-',label='M-21')
+        plt.plot(mean_corr22M,'+-',label='M-22')
         
-        plot(mean_corr11A, '*-', label='A-11')
-        plot(mean_corr12A, '.-', label='A-12')
-        plot(mean_corr21A, '|-', label='A-21')
-        plot(mean_corr22A, '+-', label='A-22')
+        plt.plot(mean_corr11A,'*-',label='A-11')
+        plt.plot(mean_corr12A,'.-',label='A-12')
+        plt.plot(mean_corr21A,'|-',label='A-21')
+        plt.plot(mean_corr22A,'+-',label='A-22')
             
             
-        legend()
-        show()
+        plt.legend()
+        plt.show()
         
     
     
     # CHECH THE CORRELATION POINT AT 
-    figure('Check position (1,8) ')
+    plt.figure('Check position (1,8) ')
     
-    plot(data21[:, 1, 8], label='2,1 pos(1,8)')
-    plot(data22[:, 1, 8], label='2,2 pos(1,8)')
-    plot(np.mean(data21, axis=(1, 2)), label='2,1 mean')
-    plot(np.mean(data22, axis=(1, 2)), label='2,2 mean')
+    plt.plot(data21[:,1,8],label='2,1 pos(1,8)') 
+    plt.plot(data22[:,1,8],label='2,2 pos(1,8)') 
+    plt.plot(np.mean(data21,axis=(1,2)), label='2,1 mean' )
+    plt.plot(np.mean(data22,axis=(1,2)), label='2,2 mean' )
     
-    legend()
-    show()
+    plt.legend()
+    plt.show()
     
     
     # MODEL AVERAGE SPECTRUM
     
-    plot(np.max(data21, axis=(1, 2)), label='2,1 max')
-    plot(np.max(data22, axis=(1, 2)), label='2,2 max')
-    plot(np.mean(data21, axis=(1, 2)), label='2,1 mean')
-    plot(np.mean(data22, axis=(1, 2)), label='2,2 mean')
-    legend()
-    show()
+    plt.plot(np.max(data21,axis=(1,2)), label='2,1 max' )
+    plt.plot(np.max(data22,axis=(1,2)), label='2,2 max' )
+    plt.plot(np.mean(data21,axis=(1,2)), label='2,1 mean' )
+    plt.plot(np.mean(data22,axis=(1,2)), label='2,2 mean' )
+    plt.legend()
+    plt.show()
     
 
 # """
