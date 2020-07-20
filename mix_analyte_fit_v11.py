@@ -1,3 +1,4 @@
+#%%
 from itertools import islice
 
 import matplotlib.pyplot as plt
@@ -19,25 +20,6 @@ import scipy.interpolate as si
 from patsy import dmatrix
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
-
-# # Generating cubic spline with 3 knots at 25, 40 and 60
-# transformed_x = dmatrix("bs(train, knots=(25,40,60), degree=3, include_intercept=False)", {"train": train_x},return_type='dataframe')
-
-# # Fitting Generalised linear model on transformed dataset
-# fit1 = sm.GLM(train_y, transformed_x).fit()
-
-# # Generating cubic spline with 4 knots
-# transformed_x2 = dmatrix("bs(train, knots=(25,40,50,65),degree =3, include_intercept=False)", {"train": train_x}, return_type='dataframe')
-
-# # Fitting Generalised linear model on transformed dataset
-# fit2 = sm.GLM(train_y, transformed_x2).fit()
-
-# # Predictions on both splines
-# pred1 = fit1.predict(dmatrix("bs(valid, knots=(25,40,60), include_intercept=False)", {"valid": valid_x}, return_type='dataframe'))
-# pred2 = fit2.predict(dmatrix("bs(valid, knots=(25,40,50,65),degree =3, include_intercept=False)", {"valid": valid_x}, return_type='dataframe'))
-
-#----------------------------------------------------------
-
 #import ste_model_spectrum.py
 
 # from ste_model_spectrum_v4 import *
@@ -56,7 +38,7 @@ my_shelf = shelve.open(filename)
 for key in my_shelf:
     globals()[key]=my_shelf[key]
 my_shelf.close()
-
+#%%
 space_mean=np.mean(data[2],axis=1)            
 f_sup=f_sup[:-1]
 
@@ -111,7 +93,7 @@ init_fit_fun = init_pseudo_voig
 loss_peak = mse_loss
 fit_fun = pseudo_voig
 
-
+#%%
 for j in range(num_th):
     
     # find the points that minimizes the variance of the data minus spline interpolation     
@@ -244,7 +226,7 @@ for j in range(num_th):
     #-------------------------------------------------------------------
     # peak fitting 
     #-------------------------------------------------------------------
-
+##the proposal
     # first obtain the complement of the intervals
     
     if idx_lr.size==0:
@@ -359,7 +341,7 @@ for j in range(num_th):
         
     #------------------------------------------
     # storing bit
-    
+#%%
     if range_p.size==0:
         print('Storing Th',j,'No peak detected')
         fitting_data[j]=dict( idx_lr_poly = idx_lr_poly, mean_level=mean_level, range_peak = 0 )
@@ -368,7 +350,7 @@ for j in range(num_th):
         fitting_data[j]=dict( idx_lr_poly = idx_lr_poly , mean_level=mean_level, mse_peak = mse_comp , range_peak = range_comp , beta_peak=beta_comp)
 
         
-        
+#%%        
 
     # update 
 
