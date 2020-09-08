@@ -9,7 +9,7 @@ Created on Sat Aug 15 02:33:27 2020
 import numpy as np
 import pandas as pd
 import shelve
-import keras_experiment
+# import keras_experiment
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow import keras
@@ -70,7 +70,7 @@ model.compile(
     metrics=['accuracy'],
 )
 
-history = model.fit(x_train_another, y_train_another, validation_split=0.2, epochs=20)#, batch_size=10, verbose=0)
+history = model.fit(x_train_another, y_train_another, validation_split=0.2, epochs=30, batch_size=256)
 
 # Evaluate the model on the test data using `evaluate`
 # print("Evaluate on test data")
@@ -89,6 +89,8 @@ plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
 plt.show()
+
+plt.figure(2)
 # summarize history for loss
 plt.plot(history.history['loss'])
 plt.plot(history.history['val_loss'])
