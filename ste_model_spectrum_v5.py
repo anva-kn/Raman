@@ -27,8 +27,9 @@ def pseudo_voig(x_data,beta):
     # G=1/(sigma*np.sqrt(2*pi))*np.exp(-(x_data-c)**2/(2*sigma**2))
     # L=1/pi*(FWHM /2)/((x_data-c)**2+ (FWHM /2)**2)
             
-    return [ M*(nu*math.exp(-(x_data[i]-c)**2/ (2*abs(sgs)))+(1-nu)*(1/(1+(abs((x_data[i]-c)/sgs))**2))) for i in range(x_data.size)] 
-
+    #return [ M*(nu*math.exp(-(x_data[i]-c)**2/ (2*abs(sgs)))+(1-nu)*(1/(1+(abs((x_data[i]-c)/sgs))**2))) for i in range(x_data.size)] 
+    return [ M*(nu*math.exp(-(x_data[i]-c)**2/ (2*abs(sgs)))+(1-nu)*(1/(1+(abs((x_data[i]-c)/FWHM))**2))) for i in range(x_data.size)] 
+  
 #------------------------------------------------------------------------------
 
 def init_pseudo_voig(x_data,y_data):
