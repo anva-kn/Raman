@@ -11,7 +11,6 @@ import shelve
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from scipy.fft import fft, ifft, ifftshift
 from scipy.optimize import minimize
 
 # In[ ]:
@@ -44,7 +43,7 @@ res = 1600
 num_th = 5
 peak_pos = []
 interpol_mse = []
-slide_win = 50
+slide_win = 5
 nu = 0.01
 interpol_mse = interpol_mse + [1000, 1000, 1000]
 
@@ -113,7 +112,9 @@ for j in range(num_th):
         plt.plot(x_data, y_data, label='Original data')
         # plt.plot(x_data, y_hat, label='Poly fitting')
         # plt.plot(x_data, y_bsp, label='Best polynomial?')
-        plt.plot(x_data, y_data - y_hat)
+        # plt.plot(x_data, y_data - y_hat)
+        plt.plot(x_data, y_hat_smooth)
+        plt.plot(x_data, signal_ifftd[0:1600])
         plt.legend()
     mean_level = y_bsp
     # --------------------------------------------------------------------
@@ -229,6 +230,7 @@ def smooth_data(y_data, win):
                        range(y_data.shape[0])])
     return smooth
 
+y_hat_smooth = smooth_data((y_data - y_hat), 10)
 
 # In[ ]:
 
@@ -428,6 +430,7 @@ signal_orig.shape
 
 
 signal_orig = np.copy(X[6, :])
+signal_orig = np.copy(y_data - y_hat)
 
 # In[ ]:
 
@@ -463,16 +466,6 @@ for i in range(signal_orig.shape[0]):
     signal_ste_poly[i, :] = remove_est_florescence(f_sup_pure, signal_orig[i, :])
     print(i)
 
-# In[ ]:
-
-
-filename = 'shelve_save_data.out'
-
-my_shelf = shelve.open(filename)
-
-my_shelf["data_rm_fl"] = signal_ste_poly
-
-my_shelf.close()
 
 # In[ ]:
 
