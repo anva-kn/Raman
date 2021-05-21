@@ -35,17 +35,25 @@ class ProcessData():
                     meta_dict = {TAGS[key] : img.tag[key] for key in img.tag}
                 info_string = meta_dict['Software'][0]
                 spec_max = float(re.findall('(?<=\SpecMax=)[0-9.]+', info_string)[0])
-                spec_min = float(re.findall('(?<=\SpecMin=)[0-9.]+', info_string)[0])
+                spec_min = float(re.findall('(?<=\SpecMin=)[-0-9.]+', info_string)[0])
                 size = int(re.findall('(?<=CCDPixel=)[0-9.]+', info_string)[0])
                 f_sup = np.linspace(spec_min, spec_max, size)
                 if data.ndim == 3:
                     shape = data.shape[0]
                     data_reshaped = data.transpose(2,1,0).reshape(-1, shape)
                     return f_sup, np.ascontiguousarray(data_reshaped, dtype=np.float64)
+                if data.shape[0] == 1:
+                    data = np.squeeze(data)
                 return f_sup, data.astype('float64')
             except FileNotFoundError:
                 print("Wrong filename or path.")
             
+    def read_uv_data(filename):
+        uv_df = pd.read_csv(filename, delimiter='\t', header=None)
+        wavelength = np.flip(uv_df[0].to_numpy(dtype=np.float64))
+        absorbance = np.flip(uv_df[1].to_numpy(dtype=np.float64))
+        return wavelength, absorbance
+
 
     def store_data(data_to_store, filename):
         np.save(filename + '.npy', data_to_store)
@@ -54,11 +62,10 @@ class ProcessData():
         np.savez_compressed(filename + '.npz', data_to_store)
         
     def read_npy_file(filename):
-        data_npy = np.load(filename)
-        return data_npy
+        return np.load(filename, allow_pickle=True)
     
     def read_npz_file(filename):
-        data_npz_dict = np.load(filename)
+        data_npz_dict = np.load(filename, allow_pickle=True)
         data_npz = data_npz_dict['arr_0']
         return data_npz
     
@@ -88,26 +95,7 @@ class ProcessData():
         first_segment_lp = np.array(range(0, int(0.25 * N)))
         second_segment_lp = np.array(range(int(0.25 * N), int(0.5 * N)))
         third_segment_lp = np.array(range(int(0.5 * N), N))
-        
-        
 
-        
-        
-        # Highpass filtering
-        # signal_spec[N + first_segment_hp] = signal_spec[N + first_segment_hp] * ((first_segment_hp * 2) / N)
-        # signal_spec[N - first_segment_hp] = signal_spec[N - first_segment_hp] * ((first_segment_hp * 2) / N)
-        # signal_spec[N + second_segment_hp] = signal_spec[N + second_segment_hp] * (
-        #             ((second_segment_hp - 0.005 * N) / N) * (0.89 / 0.005))
-        # signal_spec[N - second_segment_hp] = signal_spec[N - second_segment_hp] * (
-        #             ((second_segment_hp - 0.005 * N) / N) * (0.89 / 0.005))
-        # signal_spec[N + third_segment_hp] = signal_spec[N + third_segment_hp] * (
-        #             ((third_segment_hp - 0.01 * N) / N) * (0.1 / 0.99))
-        # signal_spec[N - third_segment_hp] = signal_spec[N - third_segment_hp] * (
-        #             ((third_segment_hp - 0.01 * N) / N) * (0.1 / 0.99))
-        
-        
-        
-        
         # Lowpass filtering
         signal_spec[N + first_segment_lp] = signal_spec[N + first_segment_lp] * (1 - (first_segment_lp * 0.1 / (0.25 * N)))
         signal_spec[N - first_segment_lp] = signal_spec[N - first_segment_lp] * (1 - (first_segment_lp * 0.1 / (0.25 * N)))
@@ -117,9 +105,7 @@ class ProcessData():
                     1.7 - ((second_segment_lp * 0.8) / (0.25 * N)))
         signal_spec[N + third_segment_lp] = signal_spec[N + third_segment_lp] * (0.2 - ((third_segment_lp * 0.1) / (0.5 * N)))
         signal_spec[N - third_segment_lp] = signal_spec[N - third_segment_lp] * (0.2 - ((third_segment_lp * 0.1) / (0.5 * N)))
-        
-        
-        
+
         # Lowpass filtering
         # signal_spec[:, N + first_segment_lp] = signal_spec[:, N + first_segment_lp] * (
         #             1 - (first_segment_lp * 0.1 / (0.25 * N)))
@@ -136,12 +122,18 @@ class ProcessData():
         
     
         signal_ifftd = np.fft.ifft(np.fft.ifftshift(signal_spec, axes=-1)) 
-        sig_ifft = np.copy(signal_ifftd[:, 0:1600] / np.max(signal_ifftd, axis=-1, keepdims=True))
+        sig_ifft = np.copy(signal_ifftd[0:1600] / np.max(signal_ifftd, axis=-1, keepdims=True))
         return sig_ifft
+    
+    def modified_z_score(data):
+        median_int = np.median(data)
+        mad_int = np.median([np.abs(data - median_int)])
+        modified_z_scores = 0.6745 * (data - median_int) / mad_int
+        return modified_z_scores
         
     def slide_win_smooth_data(data, window):
-        smooth = np.array([np.mean(data[int(np.max([j - win, 0])):int(np.min([j + win, data.size]))]) for j in
-                       range(y_data.shape[0])])
+        smooth = np.array([np.mean(data[int(np.max([j - window, 0])):int(np.min([j + window, data.size]))]) for j in
+                       range(data.shape[0])])
         return smooth
         
     def recursive_merge(inter, start_index=0):
