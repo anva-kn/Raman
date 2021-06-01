@@ -11,3 +11,13 @@
 .idea/modules.xml
 
 .idea/Raman.iml
+
+*.tif
+
+data/**
+
+*.dat
+
+*.bak
+
+*.dir
