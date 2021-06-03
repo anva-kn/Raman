@@ -8,7 +8,7 @@ Created on Mon May  25 20:45:12 2021
 import numpy as np
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
-from loss_funtions import *
+from .loss_functions import pos_mse_loss, positive_mse, poly4, reg_pos_mse_loss, reg_positive_mse, reg_pos_loss
 
 class PrepData:
 
@@ -80,6 +80,20 @@ class PrepData:
             sig_ifft = np.copy(signal_ifftd[0:1600])
             return sig_ifft
 
+
+    @staticmethod
+    def remove_cosmic_rays(f_sup, data, window):
+        # if data.ndim > 1:
+        data_out = np.copy(data)
+        delta_data = np.abs(np.diff(data_out))
+        delta_f_sup = np.abs(np.diff(f_sup))
+        slope = delta_data / delta_f_sup
+        cosmic_ray_indices = np.where(slope > 3 * np.std(slope))[0]
+        for i in cosmic_ray_indices:
+            w = np.arange(i - window, i + 1 + window)  # select 2*window + 1 points around spikes
+            w2 = w[np.in1d(w, cosmic_ray_indices) == False]
+            data_out[i] = np.mean(data[w2])
+        return data_out
 
     @staticmethod
     def poly_remove_est_florescence(f_sup, data_sub, loss):
