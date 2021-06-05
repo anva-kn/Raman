@@ -8,7 +8,9 @@ Created on Mon May  25 20:45:12 2021
 import numpy as np
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
-from .loss_functions import pos_mse_loss, positive_mse, poly4, reg_pos_mse_loss, reg_positive_mse, reg_pos_loss
+from loss_functions import pos_mse_loss, positive_mse, poly4, reg_pos_mse_loss, reg_positive_mse, reg_pos_loss, mse_loss
+from scipy import interpolate as si
+from sorting import merge as recursive_merge
 
 class PrepData:
 
@@ -146,148 +148,114 @@ class PrepData:
         return data_sub2
 
     @staticmethod
-    def spline_remove_est_fluorescence(x_data, y_data, res, num_th, slide_win):
-        res = res
-        num_th = num_th
-        peak_pos = []
-        interpol_mse = []
+    def spline_remove_est_fluorescence(x_data, y_data, slide_win):
+        #maybe last x value? If so, obtain it instead of passing it.
+        res = x_data[-1] 
+        interpol_mse = [1000, 1000, 1000]
         slide_win = slide_win
         nu = 0.01
-        interpol_mse = interpol_mse + [1000, 1000, 1000]
-
-        for j in range(num_th):
-            # find the points that minimizes the variance of the data minus spline interpolation
-            # scan all points, who cares
-            idx_left = list(set(range(res)) - set(peak_pos))
-            interpol_pos = []
-            interpol_pos = [0, np.argmin(y_data[idx_left]), res - 1]
-            # for i in range(int(y_data.shape[0]/slide_win)):
-            for i in range(2 * int(y_data.shape[0] / slide_win)):
-                min_pos = 0
-                y_hat = si.interp1d(x_data[interpol_pos], y_data[interpol_pos])(x_data)
-                min_mse = (1 - nu) * np.dot((y_hat - y_data > 0), np.abs((y_hat - y_data))) + nu * np.var(
-                    y_hat - y_data)
-                tmp_interpol_pos = list(
-                    set(range(int(i * (slide_win / 2)), min(int(i * (slide_win / 2) + (slide_win)), res))) - set(
-                        peak_pos))
-                for k in range(len(tmp_interpol_pos)):
-                    tmp_pos = np.concatenate((interpol_pos, [tmp_interpol_pos[k]]))
-                    y_hat = si.interp1d(x_data[tmp_pos], y_data[tmp_pos])(x_data)
-                    # generalize to any loss
-                    # tmp_mse=np.var(y_hat-y_data)
-                    tmp_mse = (1 - nu) * np.dot((y_hat - y_data > 0), np.abs((y_hat - y_data))) + nu * np.var(
-                        y_hat - y_data)
-                    # update the minimum
-                    if tmp_mse < min_mse:
-                        min_pos = tmp_interpol_pos[k]
-                        min_mse = tmp_mse
-                interpol_pos.append(min_pos)
-                # interpol_pos.sort()
-                interpol_mse.append(min_mse)
-                unique_pos = np.array([int(interpol_pos.index(x)) for x in set(interpol_pos)])
-                interpol_pos = list(np.array(interpol_pos)[unique_pos.astype(int)])
-                interpol_mse = list(np.array(interpol_mse)[unique_pos.astype(int)])
-                # sort points
-                sort_pos = np.argsort(interpol_pos)
-                interpol_pos = list(np.array(interpol_pos)[sort_pos.astype(int)])
-                interpol_mse = list(np.array(interpol_mse)[sort_pos.astype(int)])
-                # remove points that are too close
-            y_hat = si.interp1d(x_data[interpol_pos], y_data[interpol_pos])(x_data)
-            y_bsp = np.poly1d(np.polyfit(x_data[interpol_pos], y_data[interpol_pos], 3))(x_data)
-            # y_bsp=si.interp1d(x_data[interpol_pos],y_data[interpol_pos], kind='cubic')(x_data)
-            while True:
-                plt.plot(x_data, y_data)
-                plt.plot(x_data, y_hat)
-                plt.plot(x_data, y_bsp)
-            mean_level = y_bsp
-            # --------------------------------------------------------------------
-            #   find when you acre over the mean level
-            # --------------------------------------------------------------------
-            # th=2*np.sqrt(np.var(y_data-mean_level))
-            th = np.sqrt(np.var(y_data - mean_level))
-            pos = np.array(np.where((y_data - mean_level) < th)[0])
-            while True:
-                plt.plot(x_data, y_data)
-                plt.plot(x_data, y_bsp)
-                plt.plot(x_data[pos], y_bsp[pos], '*')
-            # --------------------------------------------------------------------
-            #   merge the points
-            # --------------------------------------------------------------------
-            diff_pos = pos[1:] - pos[:-1] - 1
-            jumps = np.where(diff_pos > 0)[0]
-            # if the final element is res, the add a jomp an the end
-            if pos[-1] == res - 1:
-                jumps = np.append(jumps, pos.shape[0] - 1)
-            final_lb = []
-            final_rb = []
-            if jumps.size == 0:
-                final_lb.append(pos[0])
-                final_rb.append(pos[-1])
-            else:
-                final_lb.append(pos[0])
-                final_rb.append(pos[jumps[0]])
-                k = 0
-                while k < jumps.shape[0] - 1:
-                    #
-                    final_lb.append(pos[jumps[k] + 1])
-                    # go to the next gap
-                    k = k + 1
-                    final_rb.append(pos[jumps[k]])
-            # add the first and the last intervals
-            idx_lr = np.zeros([2, len(final_rb)])
-            idx_lr[0] = np.array(final_lb)
-            idx_lr[1] = np.array(final_rb)
-            idx_lr.astype(int)
-            idx_lr = idx_lr.T
-            # merge intervals
-            # remove the one intervals
-            idx_lr = idx_lr[np.where(idx_lr[:, 1] - idx_lr[:, 0] > 2)[0], :]
-            merged = recursive_merge(idx_lr.tolist())
-            idx_lr = np.array(merged).astype(int)
-            idx_lr_poly = idx_lr
-        for j in range(num_th):
-            # find the points that minimizes the variance of the data minus spline interpolation
-            # scan all points, who cares
-            idx_left = list(set(range(res)) - set(peak_pos))
-            interpol_pos = []
-            interpol_pos = [0, np.argmin(y_data[idx_left]), res - 1]
-            # for i in range(int(y_data.shape[0]/slide_win)):
-            for i in range(2 * int(y_data.shape[0] / slide_win)):
-                min_pos = 0
-                y_hat = si.interp1d(x_data[interpol_pos], y_data[interpol_pos])(x_data)
-                min_mse = (1 - nu) * np.dot((y_hat - y_data > 0), np.abs((y_hat - y_data))) + nu * np.var(
-                    y_hat - y_data)
-                tmp_interpol_pos = list(
-                    set(range(int(i * (slide_win / 2)), min(int(i * (slide_win / 2) + (slide_win)), res))) - set(
-                        peak_pos))
-                for k in range(len(tmp_interpol_pos)):
-                    tmp_pos = np.concatenate((interpol_pos, [tmp_interpol_pos[k]]))
-                    y_hat = si.interp1d(x_data[tmp_pos], y_data[tmp_pos])(x_data)
-                    # generalize to any loss
-                    # tmp_mse=np.var(y_hat-y_data)
-                    tmp_mse = (1 - nu) * np.dot((y_hat - y_data > 0), np.abs((y_hat - y_data))) + nu * np.var(
-                        y_hat - y_data)
-                    # update the minimum
-                    if tmp_mse < min_mse:
-                        min_pos = tmp_interpol_pos[k]
-                        min_mse = tmp_mse
-                interpol_pos.append(min_pos)
-                # interpol_pos.sort()
-                interpol_mse.append(min_mse)
-                unique_pos = np.array([int(interpol_pos.index(x)) for x in set(interpol_pos)])
-                interpol_pos = list(np.array(interpol_pos)[unique_pos.astype(int)])
-                interpol_mse = list(np.array(interpol_mse)[unique_pos.astype(int)])
-                # sort points
-                sort_pos = np.argsort(interpol_pos)
-                interpol_pos = list(np.array(interpol_pos)[sort_pos.astype(int)])
-                interpol_mse = list(np.array(interpol_mse)[sort_pos.astype(int)])
-                # remove points that are too close
-            y_hat = si.interp1d(x_data[interpol_pos], y_data[interpol_pos])(x_data)
-            y_bsp = np.poly1d(np.polyfit(x_data[interpol_pos], y_data[interpol_pos], 3))(x_data)
-            # y_bsp=si.interp1d(x_data[interpol_pos],y_data[interpol_pos], kind='cubic')(x_data)
-            # --------------------------------------------------------------------
-            #   find when you acre over the mean level
-            # --------------------------------------------------------------------
-            # th=2*np.sqrt(np.var(y_data-mean_level))
-            th = np.sqrt(np.var(y_data - mean_level))
-            pos = np.array(np.where((y_data - mean_level) < th)[0])
+        
+        # find the points that minimizes the variance of the data minus spline interpolation
+        # scan all points, who cares
+        
+        #Did away with set() and subtraction of empty set
+        idx_left = list(range(res)) 
+        interpol_pos = [0, np.argmin(y_data[idx_left]), res] 
+        
+        for i in range(2 * int(y_data.shape[0] / slide_win)):
+            min_pos = 0
+            #interp1d returns a function, immediately used on x_data.
+            y_hat = si.interp1d(x_data[interpol_pos], y_data[interpol_pos])(x_data) 
+            min_mse = (1 - nu) * np.dot((y_hat - y_data > 0), np.abs((y_hat - y_data))) + nu * np.var(y_hat - y_data)
+            tmp_interpol_pos = list(set(range(int(i * (slide_win / 2)), min(int(i * (slide_win / 2) + (slide_win)), res))))
+            
+            for k in range(len(tmp_interpol_pos)):
+                tmp_pos = np.concatenate((interpol_pos, [tmp_interpol_pos[k]]))
+                #extrapolate lets it run but sometimes causes wrong results
+                y_hat = si.interp1d(x_data[tmp_pos], y_data[tmp_pos])(x_data)
+                # generalize to any loss
+                tmp_mse = (1 - nu) * np.dot((y_hat - y_data > 0), np.abs((y_hat - y_data))) + nu * np.var(y_hat - y_data)
+                # update the minimum
+                if tmp_mse < min_mse:
+                    min_pos = tmp_interpol_pos[k]
+                    min_mse = tmp_mse
+            
+            interpol_pos.append(min_pos)
+            interpol_mse.append(min_mse)
+            #set doesn't allow dups
+            unique_pos = np.array([int(interpol_pos.index(x)) for x in set(interpol_pos)])
+            interpol_pos = list(np.array(interpol_pos)[unique_pos.astype(int)])
+            interpol_mse = list(np.array(interpol_mse)[unique_pos.astype(int)])
+            # sort points
+            sort_pos = np.argsort(interpol_pos)
+            interpol_pos = list(np.array(interpol_pos)[sort_pos.astype(int)])
+            interpol_mse = list(np.array(interpol_mse)[sort_pos.astype(int)])
+            # remove points that are too close
+            
+        y_hat = si.interp1d(x_data[interpol_pos], y_data[interpol_pos])(x_data)
+        y_bsp = np.poly1d(np.polyfit(x_data[interpol_pos], y_data[interpol_pos], 3))(x_data)
+        
+        plt.plot(x_data, y_data)
+        plt.plot(x_data, y_hat)
+        plt.plot(x_data, y_bsp)
+        plt.legend(["Original Curve", "Y_hat", "Y_bsp"])
+        plt.show()
+        
+        #   find when you acre over the mean level
+        th = np.sqrt(np.var(y_data - y_bsp))
+        pos = np.array(np.where((y_data - y_bsp) < th)[0])
+        
+        plt.plot(x_data, y_data)
+        plt.plot(x_data, y_bsp)
+        plt.plot(x_data[pos], y_bsp[pos], '*')
+        plt.legend(["Original Curve", "y_bsp", "y_bsp[pos]"])
+        plt.show()
+        
+        #   merge the points
+        #pos[n+1] - pos[n] - 1; first and last element excluded from second mapping to prevent out of bounds
+        diff_pos = pos[1:] - pos[:-1] - 1
+        jumps = np.where(diff_pos > 0)[0]
+        
+        # if the final element is res, the add a jomp an the end
+        if pos[-1] == res:
+            jumps = np.append(jumps, pos.shape[0] - 1)
+        
+        final_lb = []
+        final_rb = []
+        
+        if jumps.size == 0:
+            final_lb.append(pos[0])
+            final_rb.append(pos[-1])
+        
+        else:
+            final_lb.append(pos[0])
+            final_rb.append(pos[jumps[0]])
+            k = 0
+            
+            while k < jumps.shape[0] - 1:
+                final_lb.append(pos[jumps[k] + 1])
+                # go to the next gap
+                k = k + 1
+                final_rb.append(pos[jumps[k]])
+        
+        # add the first and the last intervals
+        idx_lr = np.zeros([2, len(final_rb)])
+        idx_lr[0] = np.array(final_lb)
+        idx_lr[1] = np.array(final_rb)
+        idx_lr.astype(int)
+        idx_lr = idx_lr.T
+       
+        # merge intervals
+        # remove the one intervals
+        idx_lr = idx_lr[np.where(idx_lr[:, 1] - idx_lr[:, 0] > 2)[0], :]
+        #Looks like it does nothing here, as they are ordered already. unless something else was meant
+        merged = recursive_merge(idx_lr.tolist())
+        idx_lr = np.array(merged).astype(int)
+        
+        plt.plot(x_data, y_data-y_hat)
+        plt.show()
+        
+        #undid copy with missing parts
+        
+        #at this point we can maybe return values
+        return y_hat
