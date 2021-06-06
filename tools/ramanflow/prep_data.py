@@ -3,13 +3,14 @@
 """
 Created on Mon May  25 20:45:12 2021
 
-@author: anvarkunanbaev
+@author: Anvar Kunanbayev
+@author: Sergio Diaz
 """
 import numpy as np
 from scipy.optimize import minimize
 import scipy.interpolate as si
 import matplotlib.pyplot as plt
-from loss_functions import pos_mse_loss, positive_mse, poly4, reg_pos_mse_loss, reg_positive_mse, reg_pos_loss, mse_loss
+from tools.ramanflow.loss_functions import pos_mse_loss, positive_mse, poly4, reg_pos_mse_loss, reg_positive_mse, reg_pos_loss, mse_loss
 from scipy import interpolate as si
 from sorting import merge as recursive_merge
 
@@ -93,19 +94,21 @@ class PrepData:
         if data.ndim > 1:
             cosmic_ray_indices = []
             for i in range(0, slope.shape[0]):
-                cosmic_ray_indices.append(np.where(slope > 3 * np.std(slope[i]))[0])
+                cosmic_ray_indices.append(np.where(slope[i] > 3 * np.std(slope[i]))[0])
             cosmic_ray_indices = np.asarray(cosmic_ray_indices)
             for i in range(0, cosmic_ray_indices.shape[0]):
                 for j in cosmic_ray_indices[i]:
                     w = np.arange(j - window, j + 1 + window)  # select 2*window + 1 points around spikes
                     w2 = w[np.in1d(w, cosmic_ray_indices) == False]
                     data_out[i, j] = np.mean(data[i, w2])
-        cosmic_ray_indices = np.where(slope > 3 * np.std(slope))[0]
-        for i in cosmic_ray_indices:
-            w = np.arange(i - window, i + 1 + window)  # select 2*window + 1 points around spikes
-            w2 = w[np.in1d(w, cosmic_ray_indices) == False]
-            data_out[i] = np.mean(data[w2])
-        return data_out
+            return data_out
+        else:
+            cosmic_ray_indices = np.where(slope > 3 * np.std(slope))[0]
+            for i in cosmic_ray_indices:
+                w = np.arange(i - window, i + 1 + window)  # select 2*window + 1 points around spikes
+                w2 = w[np.in1d(w, cosmic_ray_indices) == False]
+                data_out[i] = np.mean(data[w2])
+            return data_out
 
     @staticmethod
     def poly_remove_est_florescence(f_sup, data_sub, loss):
@@ -159,7 +162,7 @@ class PrepData:
     @staticmethod
     def spline_remove_est_fluorescence(x_data, y_data, slide_win):
         #maybe last x value? If so, obtain it instead of passing it.
-        res = x_data[-1] 
+        res = int(x_data[-1])
         interpol_mse = [1000, 1000, 1000]
         slide_win = slide_win
         nu = 0.01
@@ -169,7 +172,7 @@ class PrepData:
         
         #Did away with set() and subtraction of empty set
         idx_left = list(range(res)) 
-        interpol_pos = [0, np.argmin(y_data[idx_left]), res] 
+        interpol_pos = [0, np.argmin(y_data[idx_left]), res - 1]
         
         for i in range(2 * int(y_data.shape[0] / slide_win)):
             min_pos = 0
@@ -180,7 +183,7 @@ class PrepData:
             
             for k in range(len(tmp_interpol_pos)):
                 tmp_pos = np.concatenate((interpol_pos, [tmp_interpol_pos[k]]))
-                #extrapolate lets it run but sometimes causes wrong results
+                # extrapolate lets it run but sometimes causes wrong results
                 y_hat = si.interp1d(x_data[tmp_pos], y_data[tmp_pos])(x_data)
                 # generalize to any loss
                 tmp_mse = (1 - nu) * np.dot((y_hat - y_data > 0), np.abs((y_hat - y_data))) + nu * np.var(y_hat - y_data)
