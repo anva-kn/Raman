@@ -14,7 +14,7 @@
 
 *.tif
 
-data/**
+data
 
 *.dat
 
