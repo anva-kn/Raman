@@ -81,6 +81,11 @@ for i in range(0, noise_diff_1_5.shape[0]):
     snr_1_5[i] = 10 * math.log10(snr_1_5[i])
     print("SNR for 1.5ppb after {}th recording is {}".format(i, snr_1_5[i]))
 
+
+check = np.diff(mean_till_now_1_5, axis=-1)
+check_abs = np.abs(check)
+check_slope = check_abs / np.abs(np.diff(f_sup))
+
 plt.figure(1, figsize=(15, 10))
 percentile = np.absolute(snr_150_1[1:] - np.nanpercentile(snr_150_1, 80)).argmin()
 plt.vlines(percentile, ymin=np.nanmin(snr_150_1), ymax=np.nanmax(snr_150_1), alpha=.2, lw=3, label='80th percentile, after {}th recording'.format(percentile))
