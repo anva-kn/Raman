@@ -1,3 +1,4 @@
+#%%
 from itertools import islice
 
 import matplotlib.pyplot as plt
@@ -14,7 +15,7 @@ from math import pi
 #import ste_model_spectrum.py
 
 from ste_model_spectrum import *
-
+#%%
 res=964
 dim_s=100
 
@@ -27,7 +28,7 @@ my_shelf = shelve.open(filename)
 for key in my_shelf:
     globals()[key]=my_shelf[key]
 my_shelf.close()
-
+#%%
 #------------------------------------------------------------------------------
 # import the clean ACE spectrum
 
@@ -37,17 +38,17 @@ temp=[i.strip('\n') for i in temp]
 dataACE=np.array([(row.split('\t')) for row in temp], dtype=np.float32)
 f_ACE=dataACE[:,0]
 dataACE=dataACE[:,1]
-
+#%%
 #------------------------------------------------------------------------------
 f_sup=f_sup[:-1]
 data_mean=np.mean(data,axis=2)
 #------------------------------------------------------------------------------
-# aligt the data
-
+# align the data
+#%%
 #  what's the shift?
 align_init=np.argmin((f_ACE-f_sup[0])**2)
 align_end=np.argmin((f_ACE-f_sup[-1])**2)
-
+#%%
 
 # f_ACE[47]
 # f_ACE[48]
@@ -57,21 +58,25 @@ align_end=np.argmin((f_ACE-f_sup[-1])**2)
 len_temp=f_sup.shape[0]
 data_ace_temp =np.zeros(len_temp)
 n_feq=align_init
-
-i=0
+#%%
+# i=0
 s1=f_sup.copy()
 
-while i<len_temp-1:        
-    pos=np.where((f_ACE>=f_sup[i]) & (f_ACE<=f_sup[i+1]))
-    
-    # 
-    data_ace_temp[i] =np.mean(dataACE[pos])
-    
-    # update counter
-    i=i+1
-    
+# while i<len_temp-1:
+#     pos=np.where((f_ACE>=f_sup[i]) & (f_ACE<=f_sup[i+1]))
+#
+#     #
+#     data_ace_temp[i] =np.mean(dataACE[pos])
+#
+#     # update counter
+#     i=i+1
+
+for i in range(0, len_temp - 1):
+    pos = np.where((f_ACE >= f_sup[i]) & (f_ACE <= f_sup[i + 1]))
+    data_ace_temp[i] = np.mean(dataACE[pos])
+
 # last point just guess
-data_ace_temp[i]=dataACE[align_end]
+data_ace_temp[-1]=dataACE[align_end]
 
 # # just align at the index 47
 # dataACE[align_init:align_end]
@@ -120,7 +125,7 @@ vecM=[comp_rangeM, comp_beta_gaussM, comp_beta_lorM, comp_beta_gen_lorM, comp_be
 recap_spectrum(f_sup,data_MG_mean_smooth,num_peaks,*vecM)
 
 plt.plot(f_sup,data_MG_mean_smooth)
-
+#%%
 #------------------------------------------------------------------------------
 
 # # model ACE 
