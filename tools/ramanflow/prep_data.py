@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 from tools.ramanflow.loss_functions import pos_mse_loss, positive_mse, poly4, reg_pos_mse_loss, reg_positive_mse, \
     reg_pos_loss, mse_loss
 from scipy import interpolate as si
-from sorting import merge as recursive_merge
 from itertools import takewhile
 
 
@@ -21,17 +20,16 @@ class PrepData:
 
     @staticmethod
     def store_data(data_to_store, filename):
-        '''
-
+        """
+        Store array-like data into .npy file.
+        
         Parameters
         ----------
-        data_to_store
-        filename
-
-        Returns
-        -------
-
-        '''
+        data_to_store : array-like.
+            Data to store into file.
+        filename : string.
+            Name of file.
+        """
         np.save(filename + '.npy', data_to_store)
 
     @staticmethod
