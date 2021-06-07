@@ -21,14 +21,47 @@ class PrepData:
 
     @staticmethod
     def store_data(data_to_store, filename):
+        '''
+
+        Parameters
+        ----------
+        data_to_store
+        filename
+
+        Returns
+        -------
+
+        '''
         np.save(filename + '.npy', data_to_store)
 
     @staticmethod
     def store_large_data(data_to_store, filename):
+        '''
+
+        Parameters
+        ----------
+        data_to_store
+        filename
+
+        Returns
+        -------
+
+        '''
         np.savez_compressed(filename + '.npz', data_to_store)
 
     @staticmethod
     def remove_zeros_or_nans(data, labels):
+        '''
+
+        Parameters
+        ----------
+        data
+        labels
+
+        Returns
+        -------
+
+        '''
         if (np.logical_and(data[:] > 0, data[:] <= 1).all()):
             mask = np.all(np.isfinite(data), axis=-1)
         mask = np.all(data, axis=-1)
@@ -38,11 +71,31 @@ class PrepData:
 
     @staticmethod
     def normalize_data(data):
+        '''
+
+        Parameters
+        ----------
+        data
+
+        Returns
+        -------
+
+        '''
         normalized_data = data / np.max(data, axis=-1, keepdims=True)
         return normalized_data
 
     @staticmethod
     def fft_remove_noise(data):
+        '''
+
+        Parameters
+        ----------
+        data
+
+        Returns
+        -------
+
+        '''
         if data.ndim > 1:
             signal_hstacked = np.hstack((data, np.fliplr(data)))
         else:
@@ -89,6 +142,17 @@ class PrepData:
 
     @classmethod
     def remove_cosmic_rays(cls, data, window):
+        '''
+
+        Parameters
+        ----------
+        data
+        window
+
+        Returns
+        -------
+
+        '''
         data_out = np.copy(data)  # Copy the data to not modify original
         delta_data = np.abs(np.diff(data_out))  # Find the difference between consecutive points
         if data.ndim > 1:
@@ -224,9 +288,6 @@ class PrepData:
         y_hat = si.interp1d(x_data[interpol_pos], data[interpol_pos])(x_data)
         y_bsp = np.poly1d(np.polyfit(x_data[interpol_pos], data[interpol_pos], 3))(x_data)
 
-        '''
-            Follwing block of code is not used
-        '''
         th = np.std(data - y_bsp)
         pos = np.array(np.where((data - y_bsp) < th)[0])
 
@@ -270,9 +331,6 @@ class PrepData:
         # Looks like it does nothing here, as they are ordered already. unless something else was meant
         merged = cls.recursive_merge(idx_lr.tolist())
         idx_lr = np.array(merged).astype(int)
-        '''
-            Untill here
-        '''
         # undid copy with missing parts
         # at this point we can maybe return values
         return y_data - y_hat
