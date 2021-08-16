@@ -5,7 +5,7 @@ Created on Mon May  24 20:42:59 2021
 
 @author: anvarkunanbaev
 """
-
+import os
 import numpy as np
 import pandas as pd
 from PIL import Image
@@ -30,8 +30,8 @@ class ReadData:
         except FileNotFoundError:
             print("Wrong filename or path.")
 
-    @staticmethod
-    def read_tiff_file(filename):
+    @classmethod
+    def read_tiff_file(cls, filename):
         try:
             data = io.imread(filename)
             with Image.open(filename) as img:
@@ -50,6 +50,15 @@ class ReadData:
             return f_sup, data.astype('float64')
         except FileNotFoundError:
             print("Wrong filename or path.")
+
+    @classmethod
+    def read_dir_tiff_files(cls, path):
+        list_of_files = os.listdir(path)
+        list_of_files_as_variables = [re.findall('.+?(?=\.)', item)[0] for item in list_of_files]
+        data = {}
+        for variable_name, item_filename in zip(list_of_files_as_variables, list_of_files):
+            f_sup, data[variable_name] = cls.read_tiff_file(path + '/' + item_filename)
+        return f_sup, data
 
     @staticmethod
     def read_uv_data(filename):
