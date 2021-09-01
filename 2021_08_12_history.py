@@ -5,6 +5,7 @@ import pandas as pd
 from tools.ramanflow.read_data import ReadData as RD
 from tools.ramanflow.prep_data import PrepData as PD
 import matplotlib
+matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 
@@ -35,7 +36,7 @@ list_of_car_aceta_aceph_variables = [re.findall('.+?(?=\.)', item)[0] for item i
 
 carbendanzim_data = {}
 for variable_name, item_filename in zip(list_of_carbendanzim_variables, list_of_carbendanzim_files):
-    carbendanzim_data[variable_name] = RD.read_tiff_file(carbendanzim_directory + '/' + item_filename)
+    f_sup, carbendanzim_data[variable_name] = RD.read_tiff_file(carbendanzim_directory + '/' + item_filename)
 acetamiprid_data = {}
 for variable_name, item_filename in zip(list_of_acetamiprid_variables, list_of_acetamiprid_files):
     f_sup, acetamiprid_data[variable_name] = RD.read_tiff_file(acetamiprid_directory + '/' + item_filename)
@@ -284,26 +285,8 @@ plt.xticks(np.arange(f_sup[0], f_sup[-1], 150))
 plt.show()
 matplotlib.rc('xtick', labelsize=15)
 matplotlib.rc('ytick', labelsize=15)
-colloidal_data = {}
-for variable_name, item_filename in zip(list_of_colloids_variables, list_of_colloids_files):
-    f_sup, colloidal_data[variable_name] = RD.read_tiff_file(colloidal_sollution_directory + '/' + item_filename)
 
-colloidal_sol_power_1_mean = np.mean(colloidal_data['colloidal_sol_1'], axis=0)
-car_power_1_time_evol_mean_no_col = car_power_1_time_evol_mean - colloidal_sol_power_1_mean
-aceta_power_1_time_evol_mean_no_col = aceta_power_1_time_evol_mean - colloidal_sol_power_1_mean
-aceph_power_1_time_evol_mean_no_col = aceph_power_1_time_evol_mean - colloidal_sol_power_1_mean
-car_aceta_power_1_time_evol_mean_no_col = car_aceta_power_1_time_evol_mean - colloidal_sol_power_1_mean
-car_aceph_power_1_time_evol_mean_no_col = car_aceph_power_1_time_evol_mean - colloidal_sol_power_1_mean
-aceta_aceph_power_1_time_evol_mean_no_col = aceta_aceph_power_1_time_evol_mean - colloidal_sol_power_1_mean
-car_aceta_aceph_power_1_time_evol_mean_no_col = car_aceta_aceph_power_1_time_evol_mean - colloidal_sol_power_1_mean
-for i in range(car_power_1_time_evol_mean.shape[0]):
-    car_power_1_time_evol_mean_smooth[i] = savgol_filter(car_power_1_time_evol_mean_no_col[i], 15, 3)
-    aceta_power_1_time_evol_mean_smooth[i] = savgol_filter(aceta_power_1_time_evol_mean_no_col[i], 15, 3)
-    aceph_power_1_time_evol_mean_smooth[i] = savgol_filter(aceph_power_1_time_evol_mean_no_col[i], 15, 3)
-    car_aceta_power_1_time_evol_mean_smooth[i] = savgol_filter(car_aceta_power_1_time_evol_mean_no_col[i], 15, 3)
-    car_aceph_power_1_time_evol_smooth[i] = savgol_filter(car_aceph_power_1_time_evol_mean_no_col[i], 15, 3)
-    aceta_aceph_power_1_time_evol_smooth[i] = savgol_filter(aceta_aceph_power_1_time_evol_mean_no_col[i], 15, 3)
-    car_aceta_aceph_power_1_time_evol_smooth[i] = savgol_filter(car_aceta_aceph_power_1_time_evol_mean_no_col[i], 15, 3)
+
 
 for i in range(len(car_power_1_time_evol_mean_smooth)):
     plt.plot(f_sup, car_power_1_time_evol_mean_smooth[i])
@@ -339,12 +322,12 @@ plt.title('Carbendanzim time evolution at HWP 42 (2.91 mW)', fontsize=17)
 plt.xticks(np.arange(f_sup[0], f_sup[-1], 150))
 plt.show()
 plt.savefig('Carbendanzim_time_evol.png', dpi=500)
-for i in range(car_power_1_time_evol_mean.shape[0]):
-    aceta_power_1_time_evol_mean_smooth[i] = savgol_filter(aceta_power_1_time_evol_mean[i], 15, 3)
-
-plt.plot(f_sup, colloidal_sol_power_1_mean, label='colloidal sol')
-plt.legend()
-plt.show()
+# for i in range(car_power_1_time_evol_mean.shape[0]):
+#     aceta_power_1_time_evol_mean_smooth[i] = savgol_filter(aceta_power_1_time_evol_mean[i], 15, 3)
+#
+# plt.plot(f_sup, colloidal_sol_power_1_mean, label='colloidal sol')
+# plt.legend()
+# plt.show()
 for i in range(len(car_power_1_time_evol_mean_smooth)):
     plt.plot(f_sup, aceta_power_1_time_evol_mean_smooth[i], color=color_label[i])
 plt.legend(power_labels, fontsize=15)
