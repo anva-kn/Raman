@@ -16,8 +16,8 @@ from skimage import io
 
 class ReadData:
 
-    @staticmethod
-    def read_dat_file(filename):
+    @classmethod
+    def read_dat_file(cls, filename):
         try:
             data = pd.read_csv(filename, sep="\s+", header=None)
             f_sup = np.array(data.iloc[:, 0], dtype=np.float64)
@@ -54,10 +54,21 @@ class ReadData:
     @classmethod
     def read_dir_tiff_files(cls, path):
         list_of_files = os.listdir(path)
-        list_of_files_as_variables = [re.findall('.+?(?=\.)', item)[0] for item in list_of_files]
         data = {}
-        for variable_name, item_filename in zip(list_of_files_as_variables, list_of_files):
-            f_sup, data[variable_name] = cls.read_tiff_file(path + '/' + item_filename)
+        for item in list_of_files:
+            if re.findall('(?<=\.).*', item) and re.findall('(?<=\.).*', item)[0] == 'tif':
+                tmp_item = re.findall('.+?(?=\.)', item)[0]
+                f_sup, data[tmp_item] = cls.read_tiff_file(path + '/' + item)
+        return f_sup, data
+
+    @classmethod
+    def read_dir_dat_files(cls, path):
+        list_of_files = os.listdir(path)
+        data = {}
+        for item in list_of_files:
+            if re.findall('(?<=\.).*', item) and re.findall('(?<=\.).*', item)[0] == 'dat':
+                tmp_item = re.findall('.+?(?=\.)', item)[0]
+                f_sup, data[tmp_item] = cls.read_dat_file(path + '/' + item)
         return f_sup, data
 
     @staticmethod
