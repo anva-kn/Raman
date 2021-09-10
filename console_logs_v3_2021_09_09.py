@@ -1,3 +1,7 @@
+print('PyDev console: using IPython 7.26.0\n')
+
+import sys; print('Python %s on %s' % (sys.version, sys.platform))
+sys.path.extend(['/home/anvarkunanbayev/PycharmProjects/Raman'])
 from tools.ramanflow.read_data import ReadData as RD
 _, check = RD.read_dir_tiff_files('data/20210319 MG colloidal SERS test')
 f_sup_0319, MG_colloidal_SERS_test_20210319 = RD.read_dir_tiff_files('data/20210319 MG colloidal SERS test')
@@ -35,4 +39,21 @@ _, Acetamiprid_0722 = RD.read_dir_tiff_files('data/20210722 colloidal SERS multi
 _, Acetamiprid_0722_power_test = RD.read_dir_tiff_files('data/20210722 colloidal SERS multiple analytes/4_Acetamiprid/HWP42 to 62 step2 1s 6x6map 10xzoom')
 _, Acephate_0722 = RD.read_dir_tiff_files('data/20210722 colloidal SERS multiple analytes/5_Acephate')
 _, Acephate_0722_power_test = RD.read_dir_tiff_files('data/20210722 colloidal SERS multiple analytes/5_Acephate/HWP42 to 62 step2 1s 6x6map 10xzoom')
-
+f_sup_0810, Carbendazim_0810 = RD.read_dir_tiff_files('data/20210810 SERS timed immersion experiment/1')
+_, Carbendazim_Acetamiprid_0810 = RD.read_dir_tiff_files('data/20210810 SERS timed immersion experiment/1+4')
+_, Carbendazim_Acetamiprid_Acephate_0810 = RD.read_dir_tiff_files('data/20210810 SERS timed immersion experiment/1+4+5')
+_, Carbendazim_Acephate_0810 = RD.read_dir_tiff_files('data/20210810 SERS timed immersion experiment/1+5')
+_, Acetamiprid_0810 = RD.read_dir_tiff_files('data/20210810 SERS timed immersion experiment/4')
+_, Acetamiprid_Acephate_0810 = RD.read_dir_tiff_files('data/20210810 SERS timed immersion experiment/4+5')
+_, Acephate_0810 = RD.read_dir_tiff_files('data/20210810 SERS timed immersion experiment/5')
+_, colloids_0810 = RD.read_dir_tiff_files('data/20210810 SERS timed immersion experiment/colloidal solution')
+f_sup_0811, Carbendazim_0811 = RD.read_dir_tiff_files('data/20210811 SERS timed immersion experiment/1')
+_, Carbendazim_Acetamiprid_0811 = RD.read_dir_tiff_files('data/20210811 SERS timed immersion experiment/1+4')
+_, Carbendazim_Acetamiprid_Acephate_0811 = RD.read_dir_tiff_files('data/20210811 SERS timed immersion experiment/1+4+5')
+_, Carbendazim_Acephate_0811 = RD.read_dir_tiff_files('data/20210811 SERS timed immersion experiment/1+5')
+_, Actamiprid_0811 = RD.read_dir_tiff_files('data/20210811 SERS timed immersion experiment/4')
+_, Actamiprid_Acephate_0811 = RD.read_dir_tiff_files('data/20210811 SERS timed immersion experiment/4+5')
+_, Acephate_0811 = RD.read_dir_tiff_files('data/20210811 SERS timed immersion experiment/5')
+_, MG_150ppb_0811 = RD.read_dir_tiff_files('data/20210811 SERS timed immersion experiment/MG_150ppb')
+%history -f console_logs_v2_2021_09_09.py
+%history -f console_logs_v3_2021_09_09.py
