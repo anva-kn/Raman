@@ -112,6 +112,8 @@ MG = {**MG_10_5M, **MG_colloidal_SERS_test_20210319, **MG_colloidal_SERS_test_20
       **MG_150ppb_0707, **MG_150ppb_0811, **MG_150ppb_0707_power_test, **MG_150ppb_0707_power_test, **HWP36_to_80_step2_10s_20210331,
       **batch2_power_test_20210331}
 
+MG_array = list(MG.values())
+
 Carbendazim = {**Carbendazim_0707, **Carbendazim_0707_power_test, **Carbendazim_0722, **Carbendazim_0722_power_test,
                **Carbendazim_0810, **Carbendazim_0811, **Carbendazim_0813, **Carbendazim_0818, **Carbendazim_old_colloids_0813,
                **Carbendazim_old_colloids_0818, **Old_Carbendazim_old_colloids_0813}
@@ -126,10 +128,12 @@ Acetamiprid = {**Acetamiprid_0707, **Acetamiprid_0707_power_test, **Acetamiprid_
                **Acetamiprid_old_colloids_v3_0818, **Old_Acetamiprid_old_colloids_0813}
 
 Acephate = {**Acephate_0707, **Acephate_0707_power_test, **Acephate_0722, **Acephate_0722_power_test, **Acephate_0810,
-            **Acephate_0811, **Acephate_0813, **Acephate_0818, **Acephate_10_2M, **Acephate_exported, **ACE_0427}
+            **Acephate_0811, **Acephate_0813, **Acephate_0818, **Acephate_10_2M, **ACE_0427}
 
-Mixes = {**mix_1115_min, **mix_1115_min, **Carbendazim_Acephate_0810, **Carbendazim_Acephate_0811, **Carbendazim_Acephate_0813,
+Mixes = {**Carbendazim_Acephate_0810, **Carbendazim_Acephate_0811, **Carbendazim_Acephate_0813,
          **Carbendazim_Acephate_0818, **Acetamiprid_Acephate_0810, **Acetamiprid_Acephate_0813, **Acetamiprid_Acephate_0811,
          **Acetamiprid_Acephate_0818, **Carbendazim_Acetamiprid_Acephate_0810, **Carbendazim_Acetamiprid_Acephate_0811,
          **Carbendazim_Acetamiprid_Acephate_0813, **Carbendazim_Acetamiprid_Acephate_0818, **MG_ACE_ACETAMIPRID_colloidal_SERS3_20210427,
-         }
+         **colloidal_SERS_multiple_analytes_20210722}
+
+colloids = {**colloids_0810}
