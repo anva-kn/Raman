@@ -1,4 +1,4 @@
-data/
+/data
 /.idea/other.xml
 /.idea/vcs.xml
 /.idea/workspace.xml
@@ -14,3 +14,4 @@ data/
 *.bak
 *.dir
 *.csv
+*.npy
