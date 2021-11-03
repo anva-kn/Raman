@@ -12,9 +12,23 @@ from PIL import Image
 from PIL.TiffTags import TAGS
 import re
 from skimage import io
-
-
+from dataclasses import dataclass
+import pdb
+@dataclass
 class ReadData:
+
+    _file_formats = {
+        'dat': 'read_dat_file',
+        'tif': 'read_tiff_file',
+        'txt': 'read_uv_data',
+        'npy': 'read_npy_file',
+        'npz': 'read_npz_file'
+    }
+
+    @classmethod
+    def read_data(cls, filename):
+        format = re.findall('[^.]+$', filename)[0]
+        return getattr(cls, cls._file_formats[format])(filename)
 
     @classmethod
     def read_dat_file(cls, filename):
@@ -73,7 +87,7 @@ class ReadData:
 
     @staticmethod
     def read_uv_data(filename):
-        uv_df = pd.read_csv(filename, delimiter='\t', header=None)
+        uv_df = pd.read_csv(filename, delimiter='\t', comment='#', header=None)
         wavelength = np.flip(uv_df[0].to_numpy(dtype=np.float64))
         absorbance = np.flip(uv_df[1].to_numpy(dtype=np.float64))
         return wavelength, absorbance
