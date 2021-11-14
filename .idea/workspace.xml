@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0eb14a67-ecbc-4847-aa67-6c8813d9b326" name="Changes" comment="" />
+    <list default="true" id="0eb14a67-ecbc-4847-aa67-6c8813d9b326" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -33,7 +35,7 @@
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.selected.package.eslint" value="(autodetect)" />
     <property name="node.js.selected.package.tslint" value="(autodetect)" />
-    <property name="settings.editor.selected.configurable" value="configurable.group.language" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyIntegratedToolsModulesConfigurable" />
   </component>
   <component name="RunManager">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
@@ -69,7 +71,8 @@
       <updated>1636796479184</updated>
       <workItem from="1636796481952" duration="66000" />
       <workItem from="1636796616532" duration="1753000" />
-      <workItem from="1636895478244" duration="1152000" />
+      <workItem from="1636895478244" duration="1255000" />
+      <workItem from="1636903455316" duration="107000" />
     </task>
     <servers />
   </component>
@@ -86,5 +89,6 @@
         </entry>
       </map>
     </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
 </project>
