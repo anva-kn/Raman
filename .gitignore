@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /data
 /.idea/other.xml
 /.idea/vcs.xml
@@ -7,11 +8,22 @@
 .idea/misc.xml
 .idea/modules.xml
 .idea/Raman.iml
+=======
+.idea/**
+
+>>>>>>> master
 *.tif
 *.png
 *.jpg
 *.dat
 *.bak
 *.dir
+<<<<<<< HEAD
 *.csv
 *.npy
+=======
+
+*.pyc
+
+data/**
+>>>>>>> master
