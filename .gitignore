@@ -1,16 +1,4 @@
-/.idea/other.xml
-/.idea/vcs.xml
-/.idea/workspace.xml
-
-.idea/inspectionProfiles/profiles_settings.xml
-
-.idea/inspectionProfiles/Project_Default.xml
-
-.idea/misc.xml
-
-.idea/modules.xml
-
-.idea/Raman.iml
+.idea/**
 
 *.tif
 
@@ -23,5 +11,7 @@
 *.bak
 
 *.dir
+
+*.pyc
 
 data/**
