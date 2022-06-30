@@ -48,7 +48,7 @@ class PrepData:
         np.savez_compressed(filename + '.npz', data_to_store)
 
     @staticmethod
-    def remove_zeros_or_nans(data, labels):
+    def remove_zeros_or_nans(data, labels=None):
         '''
 
         Parameters
