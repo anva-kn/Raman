@@ -7,7 +7,7 @@ Synthetic Signal
 @author: lab716a
 """
 
-#imports
+# imports
 
 import numpy as np
 import random
@@ -119,7 +119,7 @@ class Synthetic_Signal:
             self.snr[spectrum] = ((10* math.log10(power[spectrum])) - (10* math.log10(noise_power)))
 
         
-    def generate_random_walk(self, N, batch_size, mu=None, sigma=None, reverse=False):
+    def generate_random_walk(self, N, batch_size, mu=None, sigma=None, reverse=False, seed=None):
         '''
         This method creates your baseline, the random walk. All other methods work on this baseline.
         You must pass N and batch_size parameters.
@@ -137,13 +137,16 @@ class Synthetic_Signal:
             S.D. Used as parametet for Gaussian used in generating the walk. The default is 1.
         reverse : boolean, optional
             It reverses the mu with a probability of 0.5. This allows for decreasing and increasing walks. The default is False.
-
+        Seed : float, int, optional
+            Gives seed to random so generated values are the same each time it is run.
         Returns
         -------
         None.
         The walk is saved in data.
 
         '''
+        if seed != None:
+            random.seed(seed)
         if mu == None:
             mu = 0
         if sigma == None:

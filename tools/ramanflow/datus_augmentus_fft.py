@@ -12,14 +12,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from loss_functions import Loss
-from fit_functions import Fit
-from importance_functions import Importance
 
-from spectrum_component_v2 import SpectrumComponent
+# +
+# from loss_functions import Loss
+# from fit_functions import Fit
+# from importance_functions import Importance
 
-from spectrum import Spectrum
+# +
+# from spectrum_component_v2 import SpectrumComponent
 
+# +
+# from spectrum import Spectrum
+# -
 
 def extrapolate(x_data: np.ndarray, y_data: np.ndarray, pad_left_per: float, pad_right_per: float, pad_left_deg: str, pad_right_deg: str):
     """
@@ -112,7 +116,7 @@ def extrapolate(x_data: np.ndarray, y_data: np.ndarray, pad_left_per: float, pad
     plt.show()
     
     return X, Y
-    
+
 
 def noise_aug(y_data: np.ndarray, amp: float):
     """
@@ -236,46 +240,57 @@ def ft_aug(x_data, y_data):
     
     plt.plot(sncf)
     plt.show()
+
     
-    
-    
-xls = pd.ExcelFile("clean_spectrum.xlsx")
 
-f_sup = np.array(pd.read_excel(xls, 'f_sup')).squeeze()
-dict_data = ["dark", "laser", "quartz", "water", "gly", "leu", "phe", "trp"]
-data = {}
-for i in dict_data:
-    data[i] = np.array(pd.read_excel(xls, i))
-data_m = {}
+# +
+# xls = pd.ExcelFile("clean_spectrum.xlsx")
 
-for i in dict_data:
-    data_m[i] = np.mean(np.array(pd.read_excel(xls, i)), axis=0)
-g = data_m["gly"] - data_m["water"]
-l = data_m["leu"] - data_m["water"]
+# +
+# f_sup = np.array(pd.read_excel(xls, 'f_sup')).squeeze()
+# dict_data = ["dark", "laser", "quartz", "water", "gly", "leu", "phe", "trp"]
+# data = {}
+# for i in dict_data:
+#     data[i] = np.array(pd.read_excel(xls, i))
+# data_m = {}
 
-y_data = g
+# +
+# for i in dict_data:
+#     data_m[i] = np.mean(np.array(pd.read_excel(xls, i)), axis=0)
+# g = data_m["gly"] - data_m["water"]
+# l = data_m["leu"] - data_m["water"]
 
-y_data = (y_data-np.min(y_data) / np.max(y_data)-np.min(y_data))
-x_data = f_sup
+# +
+# y_data = g
 
-reverse_ydata = reverse_aug(y_data)
+# +
+# y_data = (y_data-np.min(y_data) / np.max(y_data)-np.min(y_data))
+# x_data = f_sup
 
-plt.figure("Reversed Spectrum", figsize=(12, 10), dpi=80)
-plt.title("Reverse")
-plt.plot(reverse_ydata)
-plt.show()
+# +
+# reverse_ydata = reverse_aug(y_data)
+
+# +
+# plt.figure("Reversed Spectrum", figsize=(12, 10), dpi=80)
+# plt.title("Reverse")
+# plt.plot(reverse_ydata)
+# plt.show()
 
 
-y2_data = l
-y2_data = (y2_data-np.min(y_data) / np.max(y2_data)-np.min(y2_data))
-x2_data = np.linspace(x_data[0], 2064.73, 1500, endpoint=True)
+# +
+# y2_data = l
+# y2_data = (y2_data-np.min(y_data) / np.max(y2_data)-np.min(y2_data))
+# x2_data = np.linspace(x_data[0], 2064.73, 1500, endpoint=True)
 
 
-yn = noise_aug(y_data, 0.05)
+# +
+# yn = noise_aug(y_data, 0.05)
 
-plt.figure("Noise Addition", figsize=(12, 10), dpi=80)
-plt.title("Original and Noise Added")
-plt.plot(x_data, yn)
-plt.show()
+# +
+# plt.figure("Noise Addition", figsize=(12, 10), dpi=80)
+# plt.title("Original and Noise Added")
+# plt.plot(x_data, yn)
+# plt.show()
 
-extrapolate(x_data, y_data, 0.1, 0.1, 'linear', 'nearest')
+# +
+# extrapolate(x_data, y_data, 0.1, 0.1, 'linear', 'nearest')

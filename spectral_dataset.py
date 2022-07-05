@@ -36,7 +36,7 @@ class SpectralDataset(Dataset):
         return (x, y)
 
 
-### TRANSFORMS ###
+# ## TRANSFORMS ###
 
 
 class GetInterval(object):
@@ -61,7 +61,7 @@ class ToFloatTensor(object):
         return x
 
 
-### TRANSFORMS ###
+# ## TRANSFORMS ###
 
 
 def spectral_dataloader(X_fn, y_fn, idxs=None, batch_size=10, shuffle=True,

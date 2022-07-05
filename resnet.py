@@ -57,7 +57,7 @@ class ResNet(nn.Module):
 
 
     def encode(self, x):
-        x = F.relu(self.bn1(self.conv1(x)))
+        x = torch.sigmoid(self.bn1(self.conv1(x)))
         x = self.encoder(x)
         z = x.view(x.size(0), -1)
         return z
