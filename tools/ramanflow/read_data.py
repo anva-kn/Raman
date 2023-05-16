@@ -53,7 +53,7 @@ class ReadData:
             with open(filename, 'rb') as f:
                 line = f.readlines()[-1]
                 # Filter line with regex. Start reading numbers after '<XAxis>' until <End>
-                f_sup = re.findall(r'(?<=<XAxis>)(.*?)(?=<End>)', line.decode('utf-8'))[0]
+                f_sup = re.findall(r'(?<=<XAxis>)(.*?)(?=<End>)', line.decode('unicode_escape'))[0]
                 # Split string with numbers into list of strings using coma as a separator
                 f_sup = f_sup.split(',')
                 # Convert list of strings to list of floats
