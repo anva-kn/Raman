@@ -14,6 +14,7 @@ from tools.ramanflow.loss_functions import pos_mse_loss, positive_mse, poly4, re
     reg_pos_loss, mse_loss
 from scipy import interpolate as si
 from itertools import takewhile
+from joblib import Parallel, delayed
 
 
 class PrepData:
@@ -50,15 +51,35 @@ class PrepData:
     @staticmethod
     def remove_zeros_or_nans(data, labels=None):
         '''
+        Remove rows from the input data where all values are zero or NaN.
 
         Parameters
         ----------
-        data
-        labels
+        data : numpy.ndarray
+            The input array of spectral data.
+        labels : numpy.ndarray, optional
+            The corresponding array of labels for the spectral data.
 
         Returns
         -------
+        numpy.ndarray
+            The input array with zero or NaN rows removed.
+        numpy.ndarray, optional
+            The corresponding array of labels with zero or NaN rows removed.
 
+        Notes
+        -----
+        This function removes rows from the input data where all values are zero or NaN. This is useful for removing
+        low-quality or missing data from the dataset.
+
+        Examples
+        --------
+        >>> data = np.array([[1, 2, 3], [0, 0, 0], [4, np.nan, 6]])
+        >>> labels = np.array([1, 2, 3])
+        >>> PrepData.remove_zeros_or_nans(data, labels)
+        (array([[1., 2., 3.],
+                [4., np.nan, 6.]]),
+         array([1, 3]))
         '''
         if (np.logical_and(data[:] > 0, data[:] <= 1).all()):
             mask = np.all(np.isfinite(data), axis=-1)
@@ -70,14 +91,31 @@ class PrepData:
     @staticmethod
     def normalize_data(data):
         '''
+        Normalize the input data by dividing each row by the maximum value in that row.
 
         Parameters
         ----------
-        data
+        data : numpy.ndarray
+            The input array of spectral data.
 
         Returns
         -------
+        numpy.ndarray
+            The normalized array of spectral data.
 
+        Notes
+        -----
+        This function normalizes the input data by dividing each row by the maximum value in that row. This ensures that
+        the maximum value in each row is equal to 1, which can be useful for comparing spectra with different intensity
+        scales.
+
+        Examples
+        --------
+        >>> data = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+        >>> PrepData.normalize_data(data)
+        array([[0.33333333, 0.66666667, 1.        ],
+               [0.66666667, 0.83333333, 1.        ],
+               [0.77777778, 0.88888889, 1.        ]])
         '''
         normalized_data = data / np.max(data, axis=-1, keepdims=True)
         return normalized_data
@@ -141,31 +179,63 @@ class PrepData:
     @classmethod
     def remove_cosmic_rays(cls, data, window):
         '''
+        Remove cosmic rays from a 1D or 2D array of spectral data.
 
         Parameters
         ----------
-        data
-        window
+        data : numpy.ndarray
+            The input array of spectral data. If `data` is a 2D array, the function will be applied to each row or column
+            of the array recursively.
+        window : int
+            The number of points to include on either side of a cosmic ray when calculating the replacement value.
 
         Returns
         -------
+        numpy.ndarray
+            The input array with cosmic rays removed.
 
+        Notes
+        -----
+        Cosmic rays are identified as points where the absolute difference between consecutive points is greater than
+        three times the standard deviation of the differences. The replacement value for each cosmic ray is calculated as
+        the mean of the points within `window` points on either side of the cosmic ray.
+
+        Examples
+        --------
+        >>> data = np.array([1, 2, 3, 100, 5, 6, 7])
+        >>> PrepData.remove_cosmic_rays(data, window=1)
+        array([1, 2, 3, 4, 5, 6, 7])
+
+        >>> data = np.array([[1, 2, 3], [100, 5, 6], [7, 8, 9]])
+        >>> PrepData.remove_cosmic_rays(data, window=1)
+        array([[1, 2, 3],
+               [53, 5, 6],
+               [7, 8, 9]])
         '''
-        data_out = np.copy(data)  # Copy the data to not modify original
-        delta_data = np.abs(np.diff(data_out))  # Find the difference between consecutive points
+        delta_data = np.abs(np.diff(data, axis=-1))  # Find the difference between consecutive points
+
         if data.ndim > 1:
-            # If you feed the array of spectra, then the function will run recursively on each individual spectrum
-            return np.apply_along_axis(func1d=cls.remove_cosmic_rays, axis=-1, arr=data_out, window=window)
-        else:
-            # Find the outliers (outlier > 3 standard deviations)
-            # + 1 for the correct index
-            cosmic_ray_indices = np.where(delta_data > 3 * np.std(delta_data))[0] + 1
+            # If the input is a 2D array, apply the function parallelly on each row or column
+            return np.array(Parallel(n_jobs=-1)(
+                delayed(cls.remove_cosmic_rays)(row, window) for row in data
+            ))
+
+        cosmic_ray_indices = np.where(delta_data > 3 * np.std(delta_data))[0] + 1  # Find cosmic ray indices
+
+        while len(cosmic_ray_indices) > 0:
             for i in cosmic_ray_indices:
-                w = np.arange(i - window, i + 1 + window)  # select 2*window + 1 points around spikes
-                w2 = w[np.in1d(w, cosmic_ray_indices) == False]  # Select points apart from spikes
-                arr = np.take(data, w2, mode='clip')  # Check if selected points raise out of bound, if yes-clip them
-                data_out[i] = np.mean(arr)  # Substitute spike with the average of the selected points
-            return data_out
+                w = np.arange(max(0, i - window), min(i + 1 + window, len(data)))  # Select points around spikes within bounds
+                w2 = np.setdiff1d(w, cosmic_ray_indices)  # Select points apart from spikes
+                arr = np.take(data, w2, mode='clip')  # Clip points that are out of bounds
+                data[i] = np.mean(arr)  # Replace cosmic ray with the average of selected points
+
+            delta_data = np.abs(np.diff(data, axis=-1))  # Update delta_data after the modifications
+            cosmic_ray_indices = np.where(delta_data > 3 * np.std(delta_data))[0] + 1  # Find cosmic ray indices again
+
+        return data
+
+
+
 
     @staticmethod
     def poly_remove_est_florescence(f_sup, data_sub, loss):
