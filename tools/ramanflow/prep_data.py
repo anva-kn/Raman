@@ -15,6 +15,7 @@ from tools.ramanflow.loss_functions import pos_mse_loss, positive_mse, poly4, re
 from scipy import interpolate as si
 from itertools import takewhile
 from joblib import Parallel, delayed
+import numexpr as ne
 
 
 class PrepData:
@@ -121,60 +122,59 @@ class PrepData:
         return normalized_data
 
     @staticmethod
-    def fft_remove_noise(data):
-        '''
+    def remove_noise_fft(data) -> np.ndarray:
+        """
+        Applies a Fast Fourier Transform (FFT) to the input data, processes the FFT result to remove noise from the signal,
+        and applies an Inverse Fast Fourier Transform (IFFT) to obtain the final output.
+
+        This method uses the `numexpr` library to evaluate mathematical expressions efficiently.
 
         Parameters
         ----------
-        data
+        data : numpy.ndarray
+            The input array of spectral data.
 
         Returns
         -------
-
-        '''
-        if data.ndim > 1:
-            signal_hstacked = np.hstack((data, np.fliplr(data)))
-        else:
-            signal_hstacked = np.hstack((data, np.flip(data)))
-
-        signal_spec = np.fft.fftshift(np.fft.fft(signal_hstacked), axes=-1)
+        numpy.ndarray
+            The processed version of the input data.
+        """
+        
         N = data.shape[-1]
-        first_segment_lp = np.array(range(0, int(0.25 * N)))
-        second_segment_lp = np.array(range(int(0.25 * N), int(0.5 * N)))
-        third_segment_lp = np.array(range(int(0.5 * N), N))
+        first_segment_lp = np.arange(0, int(0.25 * N))
+        second_segment_lp = np.arange(int(0.25 * N), int(0.5 * N))
+        third_segment_lp = np.arange(int(0.5 * N), N)
 
-        if data.ndim > 1:
-            signal_spec[:, N + first_segment_lp] = signal_spec[:, N + first_segment_lp] * (
+        # Prepare the data for FFT by stacking it with its flipped version
+        data_2d = np.atleast_2d(data)
+        signal_hstacked = np.hstack((data_2d, np.fliplr(data_2d)))
+        signal_spec = np.fft.fftshift(np.fft.fft(signal_hstacked), axes=-1)
+
+        # Apply the noise removal expressions to the signal spectrum
+        signal_spec[:, N + first_segment_lp] = signal_spec[:, N + first_segment_lp] * (
                     1 - (first_segment_lp * 0.1 / (0.25 * N)))
-            signal_spec[:, N - first_segment_lp] = signal_spec[:, N - first_segment_lp] * (
+        signal_spec[:, N - first_segment_lp] = signal_spec[:, N - first_segment_lp] * (
                     1 - (first_segment_lp * 0.1 / (0.25 * N)))
-            signal_spec[:, N + second_segment_lp] = signal_spec[:, N + second_segment_lp] * (
+        signal_spec[:, N + second_segment_lp] = signal_spec[:, N + second_segment_lp] * (
                     1.7 - ((second_segment_lp * 0.8) / (0.25 * N)))
-            signal_spec[:, N - second_segment_lp] = signal_spec[:, N - second_segment_lp] * (
+        signal_spec[:, N - second_segment_lp] = signal_spec[:, N - second_segment_lp] * (
                     1.7 - ((second_segment_lp * 0.8) / (0.25 * N)))
-            signal_spec[:, N + third_segment_lp] = signal_spec[:, N + third_segment_lp] * (
+        signal_spec[:, N + third_segment_lp] = signal_spec[:, N + third_segment_lp] * (
                     0.2 - ((third_segment_lp * 0.1) / (0.5 * N)))
-            signal_spec[:, N - third_segment_lp] = signal_spec[:, N - third_segment_lp] * (
+        signal_spec[:, N - third_segment_lp] = signal_spec[:, N - third_segment_lp] * (
                     0.2 - ((third_segment_lp * 0.1) / (0.5 * N)))
-            signal_ifftd = np.fft.ifft(np.fft.ifftshift(signal_spec, axes=-1))
-            sig_ifft = np.copy(signal_ifftd[:, 0:1600])
-            return sig_ifft
-        else:
-            signal_spec[N + first_segment_lp] = signal_spec[N + first_segment_lp] * (
-                    1 - (first_segment_lp * 0.1 / (0.25 * N)))
-            signal_spec[N - first_segment_lp] = signal_spec[N - first_segment_lp] * (
-                    1 - (first_segment_lp * 0.1 / (0.25 * N)))
-            signal_spec[N + second_segment_lp] = signal_spec[N + second_segment_lp] * (
-                    1.7 - ((second_segment_lp * 0.8) / (0.25 * N)))
-            signal_spec[N - second_segment_lp] = signal_spec[N - second_segment_lp] * (
-                    1.7 - ((second_segment_lp * 0.8) / (0.25 * N)))
-            signal_spec[N + third_segment_lp] = signal_spec[N + third_segment_lp] * (
-                    0.2 - ((third_segment_lp * 0.1) / (0.5 * N)))
-            signal_spec[N - third_segment_lp] = signal_spec[N - third_segment_lp] * (
-                    0.2 - ((third_segment_lp * 0.1) / (0.5 * N)))
-            signal_ifftd = np.fft.ifft(np.fft.ifftshift(signal_spec, axes=-1))
-            sig_ifft = np.copy(signal_ifftd[0:1600])
-            return sig_ifft
+        
+        # Apply IFFT to obtain the processed signal
+        signal_ifftd = np.fft.ifft(np.fft.ifftshift(signal_spec, axes=-1))
+
+        # Flatten and trim the output if necessary
+        if signal_ifftd.ndim == 2 and signal_ifftd.shape[0] == 1:
+            signal_ifftd = np.ravel(signal_ifftd)
+            return signal_ifftd[:data.shape[-1]]
+    
+        sig_ifft = signal_ifftd[:, :data.shape[-1]]
+
+        return sig_ifft
 
     @classmethod
     def remove_cosmic_rays(cls, data, window):
@@ -212,25 +212,38 @@ class PrepData:
                [53, 5, 6],
                [7, 8, 9]])
         '''
-        delta_data = np.abs(np.diff(data, axis=-1))  # Find the difference between consecutive points
 
+        # Find the difference between consecutive points
+        delta_data = np.abs(np.diff(data, axis=-1))
+
+        # If the input is a 2D array, apply the function parallelly on each row or column
         if data.ndim > 1:
-            # If the input is a 2D array, apply the function parallelly on each row or column
             return np.array(Parallel(n_jobs=-1)(
                 delayed(cls.remove_cosmic_rays)(row, window) for row in data
             ))
 
-        cosmic_ray_indices = np.where(delta_data > 3 * np.std(delta_data))[0] + 1  # Find cosmic ray indices
+        # Find the indices of cosmic rays
+        cosmic_ray_indices = np.where(delta_data > 3 * np.std(delta_data))[0] + 1
 
         while len(cosmic_ray_indices) > 0:
             for i in cosmic_ray_indices:
-                w = np.arange(max(0, i - window), min(i + 1 + window, len(data)))  # Select points around spikes within bounds
-                w2 = np.setdiff1d(w, cosmic_ray_indices)  # Select points apart from spikes
-                arr = np.take(data, w2, mode='clip')  # Clip points that are out of bounds
-                data[i] = np.mean(arr)  # Replace cosmic ray with the average of selected points
+                # Select points around spikes within bounds
+                w = np.arange(max(0, i - window), min(i + 1 + window, len(data)))
 
-            delta_data = np.abs(np.diff(data, axis=-1))  # Update delta_data after the modifications
-            cosmic_ray_indices = np.where(delta_data > 3 * np.std(delta_data))[0] + 1  # Find cosmic ray indices again
+                # Select points apart from spikes
+                w2 = np.setdiff1d(w, cosmic_ray_indices)
+
+                # Clip points that are out of bounds
+                arr = np.take(data, w2, mode='clip')
+
+                # Replace cosmic ray with the average of selected points
+                data[i] = np.mean(arr)
+
+            # Update delta_data after the modifications
+            delta_data = np.abs(np.diff(data, axis=-1))
+
+            # Find cosmic ray indices again
+            cosmic_ray_indices = np.where(delta_data > 3 * np.std(delta_data))[0] + 1
 
         return data
 
