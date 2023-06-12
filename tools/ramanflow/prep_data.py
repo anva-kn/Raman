@@ -15,7 +15,6 @@ from tools.ramanflow.loss_functions import pos_mse_loss, positive_mse, poly4, re
 from scipy import interpolate as si
 from itertools import takewhile
 from joblib import Parallel, delayed
-import numexpr as ne
 
 
 class PrepData:
@@ -225,30 +224,46 @@ class PrepData:
         # Find the indices of cosmic rays
         cosmic_ray_indices = np.where(delta_data > 3 * np.std(delta_data))[0] + 1
 
-        while len(cosmic_ray_indices) > 0:
-            for i in cosmic_ray_indices:
-                # Select points around spikes within bounds
-                w = np.arange(max(0, i - window), min(i + 1 + window, len(data)))
+        for i in cosmic_ray_indices:
+            # Select points around spikes within bounds
+            w = np.arange(max(0, i - window), min(i + 1 + window, len(data)))
 
-                # Select points apart from spikes
-                w2 = np.setdiff1d(w, cosmic_ray_indices)
+            # Select points apart from spikes
+            w2 = np.setdiff1d(w, cosmic_ray_indices)
 
-                # Clip points that are out of bounds
-                arr = np.take(data, w2, mode='clip')
+            # Clip points that are out of bounds
+            arr = np.take(data, w2, mode='clip')
 
-                # Replace cosmic ray with the average of selected points
-                data[i] = np.mean(arr)
+            # Replace cosmic ray with the average of selected points
+            data[i] = np.mean(arr)
 
-            # Update delta_data after the modifications
-            delta_data = np.abs(np.diff(data, axis=-1))
+            # # Update delta_data after the modifications
+            # delta_data = np.abs(np.diff(data, axis=-1))
 
-            # Find cosmic ray indices again
-            cosmic_ray_indices = np.where(delta_data > 3 * np.std(delta_data))[0] + 1
+            # # Find cosmic ray indices again
+            # cosmic_ray_indices = np.where(delta_data > 3 * np.std(delta_data))[0] + 1
 
         return data
+    
+    @classmethod
+    def remove_cosmic_rays_old(cls, data, window):
 
+        data_out = np.copy(data)  # Copy the data to not modify original
+        delta_data = np.abs(np.diff(data_out))  # Find the difference between consecutive points
 
-
+        if data.ndim > 1:
+            # If you feed the array of spectra, then the function will run recursively on each individual spectrum
+            return np.apply_along_axis(func1d=cls.remove_cosmic_rays, axis=-1, arr=data_out, window=window)
+        else:
+            # Find the outliers (outlier > 3 standard deviations)
+            # + 1 for the correct index
+            cosmic_ray_indices = np.where(delta_data > 3 * np.std(delta_data))[0] + 1
+            for i in cosmic_ray_indices:
+                w = np.arange(i - window, i + 1 + window)  # select 2*window + 1 points around spikes
+                w2 = w[np.in1d(w, cosmic_ray_indices) == False]  # Select points apart from spikes
+                arr = np.take(data, w2, mode='clip')  # Check if selected points raise out of bound, if yes-clip them
+                data_out[i] = np.mean(arr)  # Substitute spike with the average of the selected points
+            return data_out
 
     @staticmethod
     def poly_remove_est_florescence(f_sup, data_sub, loss):
@@ -305,18 +320,36 @@ class PrepData:
         return inter
 
     @classmethod
-    def spline_remove_est_fluorescence(cls, x_data, y_data, slide_win):
+    def spline_remove_est_fluorescence(cls, x_data, y_data, slide_win) -> np.ndarray:
         '''
+        Removes estimated fluorescence from spectra using spline interpolation.
 
-        Parameters
-        ----------
-        x_data: Your frequency support vector. 1D array.
-        y_data: Your spectra. Can be 1D or 2D.
-        slide_win: sliding window. Integer type
+        Parameters:
+        -----------
+        x_data : ndarray
+            Your frequency support vector. Should be a 1D array.
+        y_data : ndarray
+            Spectra data. Can be 1D or 2D array.
+        slide_win : int
+            Sliding window size for interpolation.
 
-        Returns
-        -------
-        array like y_data
+        Returns:
+        --------
+        ndarray
+            Spectra with estimated fluorescence removed.
+
+        Notes:
+        ------
+        This function performs spline interpolation to estimate and remove fluorescence from spectra data. 
+        The algorithm scans all points and finds the points that minimize the variance of the data minus the spline interpolation.
+
+        The function returns the spectra with the estimated fluorescence removed.
+
+        Example usage:
+        --------------
+        x = np.linspace(0, 10, 100)
+        y = np.random.rand(100)
+        corrected_y = spline_remove_est_fluorescence(x, y, 10)
         '''
         # maybe last x value? If so, obtain it instead of passing it.
         res = x_data.shape[-1]
@@ -415,3 +448,107 @@ class PrepData:
         # undid copy with missing parts
         # at this point we can maybe return values
         return y_data - y_hat
+
+    @classmethod
+    def spline_find_fluorescence(cls, x_data, y_data, slide_win):
+        '''
+        Finds the estimated fluorescence in spectra using spline interpolation.
+
+        Parameters:
+        -----------
+        x_data : ndarray
+            Your frequency support vector. Should be a 1D array.
+        y_data : ndarray
+            Spectra data. Can be 1D or 2D array.
+        slide_win : int
+            Sliding window size for interpolation.
+
+        Returns:
+        --------
+        ndarray
+            Estimated fluorescence values for each point in the spectra.
+
+        Notes:
+        ------
+        This function performs spline interpolation to estimate the fluorescence in the spectra data. It scans all points and finds the points that minimize the variance of the data minus the spline interpolation.
+
+        Example usage:
+        --------------
+        x = np.linspace(0, 10, 100)
+        y = np.random.rand(100)
+        fluorescence = spline_find_fluorescence(x, y, 10)
+        '''
+
+        res = x_data.shape[-1]
+        interpol_mse = [1000, 1000, 1000]
+        slide_win = slide_win
+        nu = 0.01
+
+        if y_data.ndim > 1:
+            data = np.mean(y_data, axis=0)
+        else:
+            data = np.copy(y_data)
+
+        idx_left = list(range(res))
+        interpol_pos = [0, np.argmin(data[idx_left]), res - 1]
+
+        for i in range(2 * int(data.shape[-1] / slide_win)):
+            min_pos = 0
+            y_hat = si.interp1d(x_data[interpol_pos], data[interpol_pos])(x_data)
+            min_mse = (1 - nu) * np.dot((y_hat - data > 0), np.abs((y_hat - data))) + nu * np.var(y_hat - data)
+            tmp_interpol_pos = list(set(range(int(i * (slide_win / 2)), min(int(i * (slide_win / 2) + (slide_win)), res))))
+
+            for k in range(len(tmp_interpol_pos)):
+                tmp_pos = np.concatenate((interpol_pos, [tmp_interpol_pos[k]]))
+                y_hat = si.interp1d(x_data[tmp_pos], data[tmp_pos])(x_data)
+                tmp_mse = (1 - nu) * np.dot((y_hat - data > 0), np.abs((y_hat - data))) + nu * np.var(y_hat - data)
+
+                if tmp_mse < min_mse:
+                    min_pos = tmp_interpol_pos[k]
+                    min_mse = tmp_mse
+
+            interpol_pos.append(min_pos)
+            interpol_mse.append(min_mse)
+            unique_pos = np.array([int(interpol_pos.index(x)) for x in set(interpol_pos)])
+            interpol_pos = list(np.array(interpol_pos)[unique_pos.astype(int)])
+            interpol_mse = list(np.array(interpol_mse)[unique_pos.astype(int)])
+            sort_pos = np.argsort(interpol_pos)
+            interpol_pos = list(np.array(interpol_pos)[sort_pos.astype(int)])
+            interpol_mse = list(np.array(interpol_mse)[sort_pos.astype(int)])
+
+        y_hat = si.interp1d(x_data[interpol_pos], data[interpol_pos])(x_data)
+        return y_hat
+
+    @classmethod
+    def spline_remove_fluorescence(cls, x_data, y_data, slide_win):
+        '''
+        Removes estimated fluorescence from spectra using spline interpolation.
+
+        Parameters:
+        -----------
+        x_data : ndarray
+            Your frequency support vector. Should be a 1D array.
+        y_data : ndarray
+            Spectra data. Can be 1D or 2D array.
+        slide_win : int
+            Sliding window size for interpolation.
+
+        Returns:
+        --------
+        ndarray
+            Spectra with estimated fluorescence removed.
+
+        Notes:
+        ------
+        This function performs spline interpolation to estimate and remove fluorescence from spectra data.
+        It calls `spline_find_fluorescence` to obtain the estimated fluorescence values and subtracts them from the original spectra.
+
+        Example usage:
+        --------------
+        x = np.linspace(0, 10, 100)
+        y = np.random.rand(100)
+        corrected_y = spline_remove_fluorescence(x, y, 10)
+        '''
+
+        fluorescence = cls.spline_find_fluorescence(x_data, y_data, slide_win)
+        return y_data - fluorescence
