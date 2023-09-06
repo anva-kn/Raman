@@ -31,7 +31,7 @@ class PrepData:
         filename : string.
             Name of file.
         """
-        np.save(filename + '.npy', data_to_store)
+        np.save(f'{filename}.npy', data_to_store)
 
     @staticmethod
     def store_large_data(data_to_store, filename):
@@ -46,7 +46,7 @@ class PrepData:
         -------
 
         '''
-        np.savez_compressed(filename + '.npz', data_to_store)
+        np.savez_compressed(f'{filename}.npz', data_to_store)
 
     @staticmethod
     def remove_zeros_or_nans(data, labels=None):
@@ -117,8 +117,7 @@ class PrepData:
                [0.66666667, 0.83333333, 1.        ],
                [0.77777778, 0.88888889, 1.        ]])
         '''
-        normalized_data = data / np.max(data, axis=-1, keepdims=True)
-        return normalized_data
+        return data / np.max(data, axis=-1, keepdims=True)
 
     @staticmethod
     def remove_noise_fft(data) -> np.ndarray:
@@ -162,7 +161,7 @@ class PrepData:
                     0.2 - ((third_segment_lp * 0.1) / (0.5 * N)))
         signal_spec[:, N - third_segment_lp] = signal_spec[:, N - third_segment_lp] * (
                     0.2 - ((third_segment_lp * 0.1) / (0.5 * N)))
-        
+
         # Apply IFFT to obtain the processed signal
         signal_ifftd = np.fft.ifft(np.fft.ifftshift(signal_spec, axes=-1))
 
@@ -170,10 +169,8 @@ class PrepData:
         if signal_ifftd.ndim == 2 and signal_ifftd.shape[0] == 1:
             signal_ifftd = np.ravel(signal_ifftd)
             return signal_ifftd[:data.shape[-1]]
-    
-        sig_ifft = signal_ifftd[:, :data.shape[-1]]
 
-        return sig_ifft
+        return signal_ifftd[:, :data.shape[-1]]
 
     @classmethod
     def remove_cosmic_rays(cls, data, window):

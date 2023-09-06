@@ -29,11 +29,46 @@ class ReadData:
 
     @classmethod
     def read_data(cls, filename): 
-        format = re.findall('[^.]+$', filename)[0] # get file extension
-        return getattr(cls, cls._file_formats[format])(filename) # return data from file
+        """
+        Returns data from a file based on the file extension.
+
+        Args:
+            cls: The class object.
+            filename (str): The path to the file.
+
+        Returns:
+            The data from the file.
+
+        Example:
+        ```python
+        filename = 'data.csv'
+        [data](VALID_DIRECTORY) = ReadData.read_data(filename)
+        print(data)
+        """
+        _format = re.findall('[^.]+$', filename)[0] # get file extension
+        return getattr(cls, cls._file_formats[_format])(filename) # return data from file
 
     @classmethod
     def read_dat_file(cls, filename):
+        """
+        Reads data from a .dat file and returns the frequency support and data.
+
+        Args:
+            filename (str): The path to the .dat file.
+
+        Returns:
+            tuple: A tuple containing the frequency support (numpy array) and the data (numpy array).
+
+        Raises:
+            FileNotFoundError: If the specified file is not found.
+
+        Example:
+        ```python
+        filename = 'data.dat'
+        f_sup, data = ReadData.read_dat_file(filename)
+        print(f_sup)
+        print(data)
+        """
         try:
             data = pd.read_csv(filename, sep="\s+", header=None) # read data from file
             f_sup = np.array(data.iloc[:, 0], dtype=np.float64) # get first column as numpy array
@@ -41,13 +76,28 @@ class ReadData:
             data_array = data_array.T # transpose array
             if data_array.shape[0] == 1: # if 2D array
                 data_array = np.squeeze(data_array) # remove single-dimensional entries from the shape of an array
-            np.ascontiguousarray(data_array, dtype=np.float64) # return a contiguous array (C-style) in memory (ndarray subclass)
-            return f_sup, data_array # return frequency support and data
+            # np.ascontiguousarray(data_array, dtype=np.float64) # return a contiguous array (C-style) in memory (ndarray subclass)
+            return f_sup, np.ascontiguousarray(data_array, dtype=np.float64) # return frequency support and data
         except FileNotFoundError:
             print("Wrong filename or path.")
 
     @classmethod
     def read_tiff_file(cls, filename):
+        """
+        Reads a TIFF file and returns the frequency support and data as numpy arrays.
+
+        Parameters:
+        -----------
+        filename : str
+            The path to the TIFF file.
+
+        Returns:
+        --------
+        f_sup : numpy.ndarray
+            The frequency support as a 1D numpy array.
+        data : numpy.ndarray
+            The data as a 2D numpy array, where each row represents a spectrum.
+        """
         try:
             data = io.imread(filename)
             with open(filename, 'rb') as f:
