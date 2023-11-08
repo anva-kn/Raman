@@ -5,23 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0eb14a67-ecbc-4847-aa67-6c8813d9b326" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/Acephate_Exported.dat" beforeDir="false" afterPath="$PROJECT_DIR$/data/Acephate_Exported.dat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/MG set 1/1.5ppb_all_spectrum.dat" beforeDir="false" afterPath="$PROJECT_DIR$/data/MG set 1/1.5ppb_all_spectrum.dat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/MG set 1/1500ppb_all_spectrum.dat" beforeDir="false" afterPath="$PROJECT_DIR$/data/MG set 1/1500ppb_all_spectrum.dat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/MG set 1/15ppb_all_spectrum.dat" beforeDir="false" afterPath="$PROJECT_DIR$/data/MG set 1/15ppb_all_spectrum.dat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/MG set 1/Original_MG_solution-100um_HWP49_noND_9.2mW_20x(NA0.75)_Newton(S-S-H-C)_500ms_4avg_2bx_Exported.dat" beforeDir="false" afterPath="$PROJECT_DIR$/data/MG set 1/Original_MG_solution-100um_HWP49_noND_9.2mW_20x(NA0.75)_Newton(S-S-H-C)_500ms_4avg_2bx_Exported.dat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/MG set 1/original_MG_solution.dat" beforeDir="false" afterPath="$PROJECT_DIR$/data/MG set 1/original_MG_solution.dat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/SERS with mix analyte/Acephate 10-2M 5715minutes/Acephate-SERS_1500ms_Exported.dat" beforeDir="false" afterPath="$PROJECT_DIR$/data/SERS with mix analyte/Acephate 10-2M 5715minutes/Acephate-SERS_1500ms_Exported.dat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/SERS with mix analyte/MG 10-5M 930minutes/MG-SERS_1500ms 1avg 2box_Exported.dat" beforeDir="false" afterPath="$PROJECT_DIR$/data/SERS with mix analyte/MG 10-5M 930minutes/MG-SERS_1500ms 1avg 2box_Exported.dat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/SERS with mix analyte/mix/1115min/Mix-SERS-A-(1)-1115min_532nm_Newton_105um _ND1-51_20x-NA0.75_1500ms 1avg 2box (S-S-H-C)_Exported.dat" beforeDir="false" afterPath="$PROJECT_DIR$/data/SERS with mix analyte/mix/1115min/Mix-SERS-A-(1)-1115min_532nm_Newton_105um _ND1-51_20x-NA0.75_1500ms 1avg 2box (S-S-H-C)_Exported.dat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/SERS with mix analyte/mix/1115min/Mix-SERS-A-(2)-1115min_532nm_Newton_105um _ND1-51_20x-NA0.75_1500ms 1avg 2box (S-S-H-C)_Exported.dat" beforeDir="false" afterPath="$PROJECT_DIR$/data/SERS with mix analyte/mix/1115min/Mix-SERS-A-(2)-1115min_532nm_Newton_105um _ND1-51_20x-NA0.75_1500ms 1avg 2box (S-S-H-C)_Exported.dat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/SERS with mix analyte/mix/4027min/Mix-SERS-A-(1)-4027min_532nm_Newton_105um _ND1-51_20x-NA0.75_1500ms 1avg 2box (S-S-H-C)_Exported.dat" beforeDir="false" afterPath="$PROJECT_DIR$/data/SERS with mix analyte/mix/4027min/Mix-SERS-A-(1)-4027min_532nm_Newton_105um _ND1-51_20x-NA0.75_1500ms 1avg 2box (S-S-H-C)_Exported.dat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/SERS with mix analyte/mix/4027min/Mix-SERS-A-(2)-4027min_532nm_Newton_105um _ND1-51_20x-NA0.75_1500ms 1avg 2box (S-S-H-C)_Exported.dat" beforeDir="false" afterPath="$PROJECT_DIR$/data/SERS with mix analyte/mix/4027min/Mix-SERS-A-(2)-4027min_532nm_Newton_105um _ND1-51_20x-NA0.75_1500ms 1avg 2box (S-S-H-C)_Exported.dat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/SERS with mix analyte/mix/Acephate_Exported.dat" beforeDir="false" afterPath="$PROJECT_DIR$/data/SERS with mix analyte/mix/Acephate_Exported.dat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/anvar 10-29/area1_Exported.dat" beforeDir="false" afterPath="$PROJECT_DIR$/data/anvar 10-29/area1_Exported.dat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pytorch_classification.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/pytorch_classification.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tools/ramanflow/read_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/tools/ramanflow/read_data.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Aging&amp;Time_evol.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Aging&amp;Time_evol.ipynb" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,26 +23,31 @@
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 7
+}]]></component>
   <component name="ProjectId" id="20rIrXnurdBEw0Hemz3Og0piBCM" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;last_opened_file_path&quot;: &quot;E:/Anaconda/_conda.exe&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenDatabaseViewOnStart": "true",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "git-widget-placeholder": "master",
+    "last_opened_file_path": "/home/anvar/Dev/Raman",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RunManager">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -119,16 +108,5 @@
         </entry>
       </map>
     </option>
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/tools/ramanflow/read_data.py</url>
-          <line>51</line>
-          <option name="timeStamp" value="1" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
 </project>

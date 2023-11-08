@@ -1,0 +1,16 @@
+version: '2.3'
+
+services:
+
+  jupyter-tensorflow-pytorch-gpu:
+    image: yhavinga/jupyter-tensorflow-pytorch-gpu:tensorflow2.1.0-pytorch1.4.0-cuda10.1-ubuntu18.04
+    runtime: nvidia
+    restart: always
+    environment:
+      - NV_GPU=0
+#      - JUPYTER_ENABLE_LAB=1
+    volumes:  
+      - /home/anvar/Dev/Raman:/home/jovyan/work/Raman
+    command: ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888"]
+    ports:
+      - 8888:8888
