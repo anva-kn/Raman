@@ -18,14 +18,18 @@ import linecache
 
 @dataclass
 class ReadData:
+    """
+    Class for reading data from files.
+    """
 
+    # dictionary with file extensions and corresponding methods
     _file_formats = {
         'dat': 'read_dat_file',
         'tif': 'read_tiff_file',
         'txt': 'read_uv_data',
         'npy': 'read_npy_file',
         'npz': 'read_npz_file'
-    } # dictionary with file extensions and corresponding methods
+    }
 
     @classmethod
     def read_data(cls, filename): 
@@ -49,7 +53,7 @@ class ReadData:
         return getattr(cls, cls._file_formats[_format])(filename) # return data from file
 
     @classmethod
-    def read_dat_file(cls, filename):
+    def read_dat_file(filename: str) -> tuple:
         """
         Reads data from a .dat file and returns the frequency support and data.
 
@@ -66,18 +70,18 @@ class ReadData:
         ```python
         filename = 'data.dat'
         f_sup, data = ReadData.read_dat_file(filename)
-        print(f_sup)
-        print(data)
+        plt.plot(f_sup, np.mean(data, axis=0))
+        ```
         """
         try:
-            data = pd.read_csv(filename, sep="\s+", header=None) # read data from file
-            f_sup = np.array(data.iloc[:, 0], dtype=np.float64) # get first column as numpy array
-            data_array = data.loc[:, 1:].to_numpy(dtype=np.float64) # get all columns except first as numpy array
-            data_array = data_array.T # transpose array
-            if data_array.shape[0] == 1: # if 2D array
-                data_array = np.squeeze(data_array) # remove single-dimensional entries from the shape of an array
-            # np.ascontiguousarray(data_array, dtype=np.float64) # return a contiguous array (C-style) in memory (ndarray subclass)
-            return f_sup, np.ascontiguousarray(data_array, dtype=np.float64) # return frequency support and data
+            data = pd.read_csv(filename, sep="\s+", header=None)  # read data from file
+            f_sup = np.array(data.iloc[:, 0], dtype=np.float64)  # get first column as numpy array
+            data_array = data.loc[:, 1:].to_numpy(dtype=np.float64)  # get all columns except first as numpy array
+            data_array = data_array.T  # transpose array
+            if data_array.shape[0] == 1:  # if 2D array
+                data_array = np.squeeze(data_array)  # remove single-dimensional entries from the shape of an array
+            # np.ascontiguousarray(data_array, dtype=np.float64)  # return a contiguous array (C-style) in memory (ndarray subclass)
+            return f_sup, np.ascontiguousarray(data_array, dtype=np.float64)  # return frequency support and data
         except FileNotFoundError:
             print("Wrong filename or path.")
 

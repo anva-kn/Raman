@@ -5,7 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0eb14a67-ecbc-4847-aa67-6c8813d9b326" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/Aging&amp;Time_evol.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Aging&amp;Time_evol.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/Raman.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Raman.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Publication/Aging&amp;Time_evol.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Publication/Aging&amp;Time_evol.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/long_immersion_analysis.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Publication/long_immersion_analysis.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tools/ramanflow/read_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/tools/ramanflow/read_data.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -23,31 +28,41 @@
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 7
-}]]></component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
   <component name="ProjectId" id="20rIrXnurdBEw0Hemz3Og0piBCM" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenDatabaseViewOnStart": "true",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "git-widget-placeholder": "master",
-    "last_opened_file_path": "/home/anvar/Dev/Raman",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenDatabaseViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/anvar/Dev/Raman&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/Publication" />
+    </key>
+  </component>
   <component name="RunManager">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -92,6 +107,18 @@
       <workItem from="1677754524500" duration="6408000" />
       <workItem from="1677829410269" duration="590000" />
       <workItem from="1677830217136" duration="589000" />
+      <workItem from="1700285349382" duration="1358000" />
+      <workItem from="1700322562529" duration="68000" />
+      <workItem from="1700322639240" duration="7854000" />
+      <workItem from="1700412922399" duration="882000" />
+      <workItem from="1700416332588" duration="628000" />
+      <workItem from="1700458503817" duration="324000" />
+      <workItem from="1700468811916" duration="140000" />
+      <workItem from="1700468963199" duration="769000" />
+      <workItem from="1700545505132" duration="35000" />
+      <workItem from="1700545549179" duration="1785000" />
+      <workItem from="1700551738789" duration="276000" />
+      <workItem from="1700552020540" duration="593000" />
     </task>
     <servers />
   </component>
