@@ -5,7 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0eb14a67-ecbc-4847-aa67-6c8813d9b326" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/csv-editor.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/rAvailablePackageCache.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/rGraphicsSettings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/rSettings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/rpackages.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Publication/Aging&amp;Time_evol.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Publication/Aging&amp;Time_evol.ipynb" afterDir="false" />
     </list>
@@ -52,7 +55,7 @@
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "database.data.views.appearance",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -117,6 +120,8 @@
       <workItem from="1700545549179" duration="1785000" />
       <workItem from="1700551738789" duration="276000" />
       <workItem from="1700552020540" duration="593000" />
+      <workItem from="1700628644071" duration="37000" />
+      <workItem from="1700628691008" duration="7114000" />
     </task>
     <servers />
   </component>
