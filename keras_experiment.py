@@ -6,6 +6,7 @@ Created on Thu Aug 13 13:32:03 2020
 @author: akula
 """
 
+
 import numpy as np
 import pandas as pd
 import shelve
@@ -45,8 +46,7 @@ data_1500_area4 = np.zeros((length, f_sup.shape[0]))
 
 data_150_area1 = np.zeros((length, f_sup.shape[0]))
 
-j = 0
-for i in range(1, length):
+for j, i in enumerate(range(1, length)):
 
     data_15000_area1[j] = np.array(mix_15000_area_1.iloc[:, i], dtype=np.float64)
     data_15000_area2[j] = np.array(mix_15000_area_2.iloc[:, i], dtype=np.float64)
@@ -60,10 +60,6 @@ for i in range(1, length):
     data_1500_area4[j] = np.array(mix_1500_area_4.iloc[:, i], dtype=np.float64)
 # #-------------------------------    150 PPB    ------------------------------------------------
     data_150_area1[j] = np.array(mix_150_area_1.iloc[:, i], dtype=np.float64)
-    # data_150_area2 = np.array(mix_150_area_2.iloc[:, 1:], dtype=np.float64)
-    # data_150_area3 = np.array(mix_150_area_3.iloc[:, 1:], dtype=np.float64)
-    # data_150_area4 = np.array(mix_150_area_4.iloc[:, 1:], dtype=np.float64)
-    j += 1
 #
 #
 # ################################ SAVE THE DATA ###########################################

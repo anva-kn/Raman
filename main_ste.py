@@ -46,7 +46,7 @@ if plot_on:
 #   -finding the min
 #   -windowing
 #   -interpolating
- 
+
 data_min_s=np.array([np.min(data[f,:,:])  for f in range(1600)]) 
 
 #   plt.plot(f_vec,data_mean_s)
@@ -72,39 +72,39 @@ min_wo_peaks=data_min_s.copy()
 
 for p in range(peaks.shape[0]):
     # find the alpha & beta coefficient between the edges
-        
+
     l_pos = int(np.floor(properties["left_ips"][p]))
     r_pos = int(np.ceil(properties["right_ips"][p]))
-    
+
     plt.plot(l_pos,min_wo_peaks[l_pos],'*')
     plt.plot(r_pos,min_wo_peaks[r_pos],'o')
-    
+
     win = range(l_pos,r_pos)
     win_len=r_pos-l_pos
-    
+
     #l_max=l_pos-1000*win_len
     #r_max=r_pos+1000*win_len
-    
+
     #min_win=min(min_wo_peaks[win]).copy()
     # extend the window to make sure that the spectrum is decreasing arond the window
-    
-    
+
+
     # while  (min_wo_peaks[l_pos-1]>=min_win) and (l_pos>l_max):
     #     l_pos=l_pos-1
-    
+
     # while  (min_wo_peaks[r_pos+1]>=min_win) and (r_pos<r_max):
     #     r_pos=r_pos+1
-    
-    
-    while  (min_wo_peaks[l_pos-1]<=min_wo_peaks[l_pos]):
-        l_pos=l_pos-1
-    
-    while  (min_wo_peaks[r_pos+1]<=min_wo_peaks[r_pos]):
-        r_pos=r_pos+1
-    
+
+
+    while (min_wo_peaks[l_pos-1]<=min_wo_peaks[l_pos]):
+        l_pos -= 1
+
+    while (min_wo_peaks[r_pos+1]<=min_wo_peaks[r_pos]):
+        r_pos += 1
+
     min_wo_peaks[l_pos:r_pos]=np.min([min_wo_peaks[l_pos],min_wo_peaks[r_pos]])
-    
-    
+
+
 poly_min=np.poly1d(np.polyfit(f_vec,min_wo_peaks,3))(f_vec)
 
 poly_min_pos=poly_min+min(min_wo_peaks-poly_min)
@@ -120,18 +120,13 @@ peak_fig=1
 
 INF=10**4
 
-def loss_function (y_pred,y_true):        
-    if  y_pred-y_true>0:
-        loss=INF*(y_pred-y_true)**2
-    else:
-        loss=(y_pred-y_true)**2            
-    return(loss)
+def loss_function(y_pred,y_true):        
+    return INF*(y_pred-y_true)**2 if y_pred-y_true>0 else (y_pred-y_true)**2
 
 
 def objective_function(beta, X, Y):
     p=np.poly1d(beta)
-    error = sum([loss_function(p(X[i]), Y[i]) for i in range(X.size)])/X.size
-    return(error)
+    return sum(loss_function(p(X[i]), Y[i]) for i in range(X.size)) / X.size
 
 #
 # p=np.poly1d(beta_init)
@@ -265,9 +260,9 @@ plt.plot(f_vec,data_temp,'--')
 def add_peak(prefix, center, amplitude=1, sigma=1):
     peak = LorentzianModel(prefix=prefix)
     pars = peak.make_params()
-    pars[prefix + 'center'].set(center)
-    pars[prefix + 'amplitude'].set(amplitude)
-    pars[prefix + 'sigma'].set(sigma, min=0)
+    pars[f'{prefix}center'].set(center)
+    pars[f'{prefix}amplitude'].set(amplitude)
+    pars[f'{prefix}sigma'].set(sigma, min=0)
     return peak, pars
 
 model = QuadraticModel(prefix='bkg_')
@@ -343,9 +338,9 @@ rough_peak_positions = f_vec[idx]
 def add_peak(prefix, center, amplitude=5, sigma=5):
     peak = LorentzianModel(prefix=prefix)
     pars = peak.make_params()
-    pars[prefix + 'center'].set(center)
-    pars[prefix + 'amplitude'].set(amplitude)
-    pars[prefix + 'sigma'].set(sigma, min=0)
+    pars[f'{prefix}center'].set(center)
+    pars[f'{prefix}amplitude'].set(amplitude)
+    pars[f'{prefix}sigma'].set(sigma, min=0)
     return peak, pars
 
 model = QuadraticModel(prefix='bkg_')

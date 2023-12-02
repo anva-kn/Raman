@@ -17,9 +17,9 @@ ydat = test[1, :]
 def add_peak(prefix, center, amplitude=0.005, sigma=0.05):
     peak = LorentzianModel(prefix=prefix)
     pars = peak.make_params()
-    pars[prefix + 'center'].set(center)
-    pars[prefix + 'amplitude'].set(amplitude)
-    pars[prefix + 'sigma'].set(sigma, min=0)
+    pars[f'{prefix}center'].set(center)
+    pars[f'{prefix}amplitude'].set(amplitude)
+    pars[f'{prefix}sigma'].set(sigma, min=0)
     return peak, pars
 
 model = QuadraticModel(prefix='bkg_')

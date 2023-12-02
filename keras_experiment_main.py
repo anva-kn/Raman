@@ -6,6 +6,7 @@ Created on Sat Aug 15 02:33:27 2020
 @author: akula
 """
 
+
 import numpy as np
 import pandas as pd
 import shelve
@@ -28,7 +29,7 @@ print(data_15000.shape, f_sup.shape)
 
 whole_data = np.zeros((20000, 1600))
 print(whole_data.shape)
-whole_data[0:2500] = np.copy(data_15000[0]/np.max(data_15000[0]))
+whole_data[:2500] = np.copy(data_15000[0]/np.max(data_15000[0]))
 whole_data[2500:5000] = np.copy(data_15000[1]/np.max(data_15000[1]))
 whole_data[5000:7500] = np.copy(data_15000[2]/np.max(data_15000[2]))
 whole_data[7500:10000] = np.copy(data_15000[3]/np.max(data_15000[3]))
