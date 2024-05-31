@@ -84,11 +84,7 @@ print(list_windowed)
 
 min_position = []
 max_position = []
-min_position_list = []
-for min_position in list_windowed:
-    min_position_list.append(min(min_position))
-    # max_position.append(max(list_windowed))
-
+min_position_list = [min(min_position) for min_position in list_windowed]
 print(min_position_list)
 ###########
 

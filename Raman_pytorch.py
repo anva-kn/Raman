@@ -45,7 +45,7 @@ peak_pos = []
 interpol_mse = []
 slide_win = 5
 nu = 0.01
-interpol_mse = interpol_mse + [1000, 1000, 1000]
+interpol_mse += [1000, 1000, 1000]
 
 
 # in[4]:
@@ -65,7 +65,7 @@ def recursive_merge(inter, start_index=0):
 # in[ ]:
 
 
-for j in range(num_th):
+for _ in range(num_th):
     # find the points that minimizes the variance of the data minus spline interpolation
     # scan all points, who cares
     idx_left = list(set(range(res)) - set(peak_pos))
@@ -83,15 +83,15 @@ for j in range(num_th):
         min_mse = (1 - nu) * np.dot((y_hat - y_data > 0), np.abs((y_hat - y_data))) + nu * np.var(y_hat - y_data)
         tmp_interpol_pos = list(
             set(range(int(i * (slide_win / 2)), min(int(i * (slide_win / 2) + (slide_win)), res))) - set(peak_pos))
-        for k in range(len(tmp_interpol_pos)):
-            tmp_pos = np.concatenate((interpol_pos, [tmp_interpol_pos[k]]))
+        for tmp_interpol_po in tmp_interpol_pos:
+            tmp_pos = np.concatenate((interpol_pos, [tmp_interpol_po]))
             y_hat = si.interp1d(x_data[tmp_pos], y_data[tmp_pos])(x_data)
             # generalize to any loss
             # tmp_mse=np.var(y_hat-y_data)
             tmp_mse = (1 - nu) * np.dot((y_hat - y_data > 0), np.abs((y_hat - y_data))) + nu * np.var(y_hat - y_data)
             # update the minimum
             if tmp_mse < min_mse:
-                min_pos = tmp_interpol_pos[k]
+                min_pos = tmp_interpol_po
                 min_mse = tmp_mse
         interpol_pos.append(min_pos)
         # interpol_pos.sort()
@@ -103,7 +103,7 @@ for j in range(num_th):
         sort_pos = np.argsort(interpol_pos)
         interpol_pos = list(np.array(interpol_pos)[sort_pos.astype(int)])
         interpol_mse = list(np.array(interpol_mse)[sort_pos.astype(int)])
-        # remove points that are too close
+            # remove points that are too close
     y_hat = si.interp1d(x_data[interpol_pos], y_data[interpol_pos])(x_data)
     y_bsp = np.poly1d(np.polyfit(x_data[interpol_pos], y_data[interpol_pos], 3))(x_data)
     # y_bsp=si.interp1d(x_data[interpol_pos],y_data[interpol_pos], kind='cubic')(x_data)
@@ -114,7 +114,7 @@ for j in range(num_th):
         # plt.plot(x_data, y_bsp, label='Best polynomial?')
         # plt.plot(x_data, y_data - y_hat)
         plt.plot(x_data, y_hat_smooth)
-        plt.plot(x_data, signal_ifftd[0:1600])
+        plt.plot(x_data, signal_ifftd[:1600])
         plt.legend()
     mean_level = y_bsp
     # --------------------------------------------------------------------
@@ -137,20 +137,18 @@ for j in range(num_th):
     # if the final element is res, the add a jomp an the end
     if pos[-1] == res - 1:
         jumps = np.append(jumps, pos.shape[0] - 1)
-    final_lb = []
     final_rb = []
+    final_lb = [pos[0]]
     if jumps.size == 0:
-        final_lb.append(pos[0])
         final_rb.append(pos[-1])
     else:
-        final_lb.append(pos[0])
         final_rb.append(pos[jumps[0]])
         k = 0
         while k < jumps.shape[0] - 1:
             #
             final_lb.append(pos[jumps[k] + 1])
             # go to the next gap
-            k = k + 1
+            k += 1
             final_rb.append(pos[jumps[k]])
     # add the first and the last intervals
     idx_lr = np.zeros([2, len(final_rb)])
@@ -171,11 +169,7 @@ for j in range(num_th):
 
 def remove_est_florescence(f_sup, data_sub):
     # min_data_amm=np.min(data_sub,axis=1)
-    if data_sub.ndim > 1:
-        min_data_amm = np.mean(data_sub, axis=0)
-    else:
-        min_data_amm = data_sub
-
+    min_data_amm = np.mean(data_sub, axis=0) if data_sub.ndim > 1 else data_sub
     poly_min = np.poly1d(np.polyfit(f_sup, min_data_amm, 3))(f_sup)
     poly_min_pos = poly_min + min(min_data_amm - poly_min)
 
@@ -226,9 +220,18 @@ def remove_est_florescence(f_sup, data_sub):
 
 
 def smooth_data(y_data, win):
-    smooth = np.array([np.mean(y_data[int(np.max([j - win, 0])):int(np.min([j + win, y_data.size]))]) for j in
-                       range(y_data.shape[0])])
-    return smooth
+    return np.array(
+        [
+            np.mean(
+                y_data[
+                    int(np.max([j - win, 0])) : int(
+                        np.min([j + win, y_data.size])
+                    )
+                ]
+            )
+            for j in range(y_data.shape[0])
+        ]
+    )
 
 y_hat_smooth = smooth_data((y_data - y_hat), 10)
 
@@ -246,8 +249,7 @@ def pos_mse_loss(beta, X, Y, function):
 
 def positive_mse_loss(beta, X, Y):
     p = np.poly1d(beta)
-    error = sum([positive_mse(p(X[i]), Y[i]) for i in range(X.size)]) / X.size
-    return (error)
+    return sum(positive_mse(p(X[i]), Y[i]) for i in range(X.size)) / X.size
 
 
 def reg_positive_mse(y_pred, y_true):
