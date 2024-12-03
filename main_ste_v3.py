@@ -136,33 +136,31 @@ def lor_amp(x_data,beta):
 def cos_window(t,L,M,R,o,d,al,be):
     
     if t<o:
-        out=L    
+        return L
     elif o<=t & t<o+al:
-        out=L+(M-L)/2*(1-np.cos(2*pi*(t-o)/(2*al)))
+        return L+(M-L)/2*(1-np.cos(2*pi*(t-o)/(2*al)))
     elif o+al<=t & t<o+al+d: 
-        out=M
+        return M
     elif o+al+d<= t & t<o+al+d+be:
-        out=R+(M-R)/2*(1-np.cos(2*pi*(be-(t-d-o-al))/(2*be)))
+        return R+(M-R)/2*(1-np.cos(2*pi*(be-(t-d-o-al))/(2*be)))
     elif t>=o+al+d+be:
-        out=R
+        return R
     else:
-        out=0
-    return  out
+        return 0
 
 
 def cos_window2(t,L,M,R,o,al,be):
     
     if t<o:
-        out=L    
+        return L
     elif o<=t & t<o+al:
-        out=L+(M-L)/2*(1-np.cos(2*pi*(t-o)/(2*al)))
+        return L+(M-L)/2*(1-np.cos(2*pi*(t-o)/(2*al)))
     elif o+al<= t & t<o+al+be:
-        out=R+(M-R)/2*(1-np.cos(2*pi*(be-(t-o-al))/(2*be)))
+        return R+(M-R)/2*(1-np.cos(2*pi*(be-(t-o-al))/(2*be)))
     elif t>=o+al+be:
-        out=R
+        return R
     else:
-        out=0
-    return  out
+        return 0
 
 def cos_win(x_data,beta):    
     L=beta[0]
@@ -172,9 +170,8 @@ def cos_win(x_data,beta):
     d=beta[4]
     al=beta[5]
     be=beta[6]
-    
-    yvec=[cos_window(t,L,M,R,o,d,al,be)  for t in range(x_data.size)]
-    return yvec
+
+    return [cos_window(t,L,M,R,o,d,al,be)  for t in range(x_data.size)]
 
 
 
@@ -182,12 +179,11 @@ def cos_win2(x_data,beta):
     L=beta[0]
     M=beta[1]
     R=beta[2]
-    o=beta[3]    
+    o=beta[3]
     al=beta[4]
     be=beta[5]
-    
-    yvec=[cos_window2(t,L,M,R,o,al,be)  for t in range(x_data.size)]
-    return yvec
+
+    return [cos_window2(t,L,M,R,o,al,be)  for t in range(x_data.size)]
 
 
 #-----------------------------------------------------------------------------
@@ -203,8 +199,7 @@ def pos_mse_loss(beta, X, Y,function):
 
 def positive_mse_loss(beta, X, Y):
     p=np.poly1d(beta)
-    error = sum([positive_mse(p(X[i]), Y[i]) for i in range(X.size)])/X.size
-    return(error)
+    return sum(positive_mse(p(X[i]), Y[i]) for i in range(X.size)) / X.size
 
 
 def mse_loss(beta,X, Y,function):
@@ -213,10 +208,10 @@ def mse_loss(beta,X, Y,function):
 def find_peak_sym_supp(peak,l_pos,r_pos, win_len_mul, smooth_win, Y):
     # win_len_mul= how much do we extend the window length 
     # smooth_win= how much do we smooth the function
-            
+
     Y_smooth=smooth_data(Y,smooth_win)
-    
-    
+
+
     if l_pos==r_pos:
         y_data=Y_smooth[l_pos]
         Y_max=y_data
@@ -225,18 +220,18 @@ def find_peak_sym_supp(peak,l_pos,r_pos, win_len_mul, smooth_win, Y):
     else:
         y_data=Y_smooth[l_pos:r_pos]
         Y_max=np.max(y_data)
-        Y_max_idx=l_pos+np.argmax(Y[l_pos:r_pos])        
-        Y_min=np.mean(np.sort(y_data)[0:int(y_data.size/10)+1])
-            
+        Y_max_idx=l_pos+np.argmax(Y[l_pos:r_pos])
+        Y_min = np.mean(np.sort(y_data)[:int(y_data.size/10)+1])
+
     l_pos_temp=Y_max_idx-1
     r_pos_temp=Y_max_idx+1
-        
+
     while  Y_smooth[l_pos_temp-1]<=Y_smooth[l_pos_temp]  and l_pos_temp>0:
         l_pos_temp=l_pos_temp-1
-    
+
     while  Y_smooth[r_pos_temp+1]<=Y_smooth[r_pos_temp] and r_pos_temp<res-1: 
         r_pos_temp=r_pos_temp+1
-        
+
     return [l_pos_temp,r_pos_temp]
 
 #-----------------------------------------------------------------------------
@@ -245,66 +240,52 @@ def find_peak_sym_supp(peak,l_pos,r_pos, win_len_mul, smooth_win, Y):
 
 def init_cos(x_data,y_data):
     # order of arguments: M,o,d,al,be
-    
+
     # fix the smoothing window to 3
     y_smoth=smooth_data(y_data,3)
     power=np.dot(y_data,y_data.T)/dim_s
-        
+
     floor_th=0.1*np.sqrt(power)
     # how to define the ceiling of the function
     ceil_th=0.9*np.sqrt(power)    
-    
+
     #  while extending 0 l_win_low /  win_up / l_win_high-r_win_high / win_down / r_win_low-dim_s
-    
-    l_win_low  = np.argmax(floor_th<y_smoth) 
+
+    l_win_low  = np.argmax(floor_th<y_smoth)
     r_win_low =x_data.size- np.argmax(floor_th<np.flip(y_smoth) )
-    
-    
-    l_win_high =  np.argmax(ceil_th<y_smoth) 
+
+
+    l_win_high =  np.argmax(ceil_th<y_smoth)
     r_win_high =x_data.size- np.argmax(ceil_th<np.flip(y_smoth) )    
-    
-    # L_init=0
-    # M_init =ceil_th
-    # R_init=0
-    # o_init = l_win_low  
-    # d_init = r_win_high -l_win_high 
-    # al_init= l_win_high-l_win_low  
-    # be_init= r_win_low- r_win_high
-    
-    beta_cos_int=[0, ceil_th, 0, l_win_low, r_win_high -l_win_high, l_win_high-l_win_low, r_win_low- r_win_high]
-    
-    return beta_cos_int
+
+    return [
+        0,
+        ceil_th,
+        0,
+        l_win_low,
+        r_win_high - l_win_high,
+        l_win_high - l_win_low,
+        r_win_low - r_win_high,
+    ]
 
 
 def init_cos2(x_data,y_data):
     # order of arguments: L,M,R,o,al,be
-    
+
     # fix the smoothing window to 3
     y_smoth=smooth_data(y_data,3)
     power=np.dot(y_data,y_data.T)/dim_s
-        
+
     floor_th=0.1*np.sqrt(power)
-    
-    l_win_low  = np.argmax(floor_th<y_smoth) 
+
+    l_win_low  = np.argmax(floor_th<y_smoth)
     r_win_low =x_data.size- np.argmax(floor_th<np.flip(y_smoth) )
-    
-    
+
+
     M=np.max(y_data[l_win_low:r_win_low])
     peak_pos=l_win_low+np.argmax(y_data[l_win_low:r_win_low])
-                     
-    #l_win_high =  np.argmax(ceil_th<y_smoth) 
-    #r_win_high =x_data.size- np.argmax(ceil_th<np.flip(y_smoth) )    
-    
-    # L_init=0
-    # M_init =ceil_th
-    # R_init=0
-    # o_init = l_win_low  
-    # al_init= peak_pos-l_win_low  
-    # be_init= r_win_low- peak_pos
-    
-    beta_cos2_int=[0, M, 0, l_win_low, peak_pos-l_win_low, r_win_low- peak_pos]
-    
-    return beta_cos2_int
+
+    return [0, M, 0, l_win_low, peak_pos-l_win_low, r_win_low- peak_pos]
 
 
 # plt.plot(x_data,y_data)        
@@ -344,38 +325,38 @@ for p in range(peaks.shape[0]):
     # find the alpha & beta coefficient between the edges    
     lin_int=properties["width_heights"][p]
     mean_wo_peaks[int(peaks[p]-properties["widths"][p]):int(peaks[p]+properties["widths"][p])]=lin_int
-    
+
 
 for p in range(peaks.shape[0]):
     # find the alpha & beta coefficient between the edges
-        
+
     l_pos = int(np.floor(properties["left_ips"][p]))
     r_pos = int(np.ceil(properties["right_ips"][p]))
-    
+
     win_len=r_pos-l_pos
-    
+
     l_max = max(0,l_pos-10*win_len)
     r_max = min(res-2,r_pos+10*win_len)
-    
+
     # l_max = 0
     # r_max = res-2
     # extend the window to make sure that the spectrum is decreasing arond the window
-    
-    while  (mean_wo_peaks[l_pos-1]<=mean_wo_peaks[l_pos]) and (l_pos>l_max):
-        l_pos=l_pos-1
-    
-    while  (mean_wo_peaks[r_pos+1]<=mean_wo_peaks[r_pos]) and (r_pos<r_max):
-        r_pos=r_pos+1
-    
+
+    while (mean_wo_peaks[l_pos-1]<=mean_wo_peaks[l_pos]) and (l_pos>l_max):
+        l_pos -= 1
+
+    while (mean_wo_peaks[r_pos+1]<=mean_wo_peaks[r_pos]) and (r_pos<r_max):
+        r_pos += 1
+
     # plt.plot(l_pos,mean_wo_peaks[l_pos],'*')
     # plt.plot(r_pos,mean_wo_peaks[r_pos],'+')
-    
+
     win = range(l_pos,r_pos)
     win_len=r_pos-l_pos
     min_win=min(mean_wo_peaks[win]).copy()
-        
+
     mean_wo_peaks[l_pos:r_pos]=min_win
-  
+
 
 poly_min=np.poly1d(np.polyfit(f_sup,mean_wo_peaks,3))(f_sup)
 
@@ -399,7 +380,7 @@ beta_init[4]=beta_init[4]+min(mean_wo_peaks-poly_min)
 
 result = minimize(positive_mse_loss, beta_init, args=(f_sup,mean_data_MG), method='Nelder-Mead', tol=1e-3)
 
-beta_hat = result.x                 
+beta_hat = result.x
 beta_hat -beta_init
 poly_min_hat=np.poly1d(beta_hat)(f_sup)
 
@@ -409,7 +390,7 @@ min_spec=np.min(data_MG,axis=(1,2))
 data_sparse=data_MG.reshape(res,dim_s)-np.reshape(poly_min_hat,[res,1])
 data_sparse=data_sparse-np.min(data_sparse)
 
-   
+
 
 data_mean_sparse=np.mean(data_sparse,axis=1)
 
@@ -475,32 +456,8 @@ idx=peaks[idx_peaks]
 ##   TAKE ONLY THE STRONGEST 10 PEAKS
 ##
 #############################33
-rough_peak_positions = idx[0:10]
+rough_peak_positions = idx[:10]
 
-
-# plt.plot(f_sup[rough_peak_positions ],data_mean_sparse[rough_peak_positions ],'*r')
-# plt.plot(f_sup[peaks],data_mean_sparse[peaks],'.')
-# plt.plot(f_sup,data_mean_sparse)
-
-
-#for  i in range(int(rough_peak_positions.size)):    
-if False:
-    for  i in range(5):        
-        p=idx_peaks[i]
-        l_ips=int(properties['left_bases'][p])
-        r_ips=int(properties['right_bases'][p])
-        
-        plt.plot(f_sup,data_mean_sparse)        
-        plt.plot(f_sup[peaks[p]],data_mean_sparse[peaks][p],'*r')
-        plt.plot(f_sup[l_ips:r_ips],data_mean_sparse[l_ips:r_ips]+0.00005,'--k')
-    
-    for  i in range(5):            
-        p=idx_peaks[i]
-        plt.plot(data_mean_sparse)
-        plt.plot(peaks[p],data_mean_sparse[peaks[p]],'*')
-        plt.plot(range(l_ips[p],r_ips[p]),data_mean_sparse[l_ips[p]:r_ips[p]],'--')            
-        #plt.plot(range(l_win,r_win),data_mean_sparse[l_win:r_win],'--')      
-        
 
 #----------------------------------------------------------
 # let's say that if the peak prominance is in the 75%  quantile, than we use the expand peak method only
@@ -530,99 +487,96 @@ data_sparse_back[0,:,:]=data_sparse
 
 plot_f=0
 check_sup_fig=0
-#for  i in range(5):        
- #   for  i in range(int(rough_peak_positions.size)):
-     
-for  i in range(int(rough_peak_positions.size)):
-        print('Step: ',i,' -peak position: ',rough_peak_positions[i])
+for i in range(int(rough_peak_positions.size)):
+    print('Step: ',i,' -peak position: ',rough_peak_positions[i])
 
-        p=idx_peaks[i]
-        
-        [l_win, r_win] = find_peak_sym_supp(peaks[p],int(l_ips[p]),int(r_ips[p]), 2, 3, data_mean_sparse)
-        
+    p=idx_peaks[i]
+
+    [l_win, r_win] = find_peak_sym_supp(peaks[p],int(l_ips[p]),int(r_ips[p]), 2, 3, data_mean_sparse)
+
         #[l_win, r_win],[l_ips,r_ips]
         
-        if check_sup_fig:
-            plt.figure('peak number '+str(int(i))+' frequency')
-            plt.plot(data_mean_sparse)
-            plt.plot(peaks[p],data_mean_sparse[peaks[p]],'*')
-            plt.plot(range(l_ips[p],r_ips[p]),data_mean_sparse[l_ips[p]:r_ips[p]],'--')            
-            plt.plot(range(l_win,r_win),data_mean_sparse[l_win:r_win],'--')            
-                    
-        #[l_win, r_win]=[l_ips,r_ips]
-        x_data = f_sup[l_win:r_win]
-        y_data = np.mean(data_sparse_back[i,l_win:r_win,:],axis=1)
-        
+    if check_sup_fig:
+        plt.figure(f'peak number {int(i)} frequency')
+        plt.plot(data_mean_sparse)
+        plt.plot(peaks[p],data_mean_sparse[peaks[p]],'*')
+        plt.plot(range(l_ips[p],r_ips[p]),data_mean_sparse[l_ips[p]:r_ips[p]],'--')
+        plt.plot(range(l_win,r_win),data_mean_sparse[l_win:r_win],'--')            
+
+    #[l_win, r_win]=[l_ips,r_ips]
+    x_data = f_sup[l_win:r_win]
+    y_data = np.mean(data_sparse_back[i,l_win:r_win,:],axis=1)
+
         # this is my guess for a good strategy
         #bias_f = min(y_data)/2
         # random choice of bias
-        bias_f = np.mean(np.sort(y_data)[0:int(y_data.size/5)])
-        y_data = y_data -bias_f 
-        
-        # you can use the same intialization for gaus, lor, gen_lor        
-        beta_init_lor=init_lor(x_data,y_data)
-        
-        
-        # best gaussian fit
-        result = minimize(mse_loss, beta_init_lor, args=(x_data,y_data,gauss_amp), method='Nelder-Mead', tol=1e-12)        
-        beta_hat_gauss=result.x            
-        MSE_gauss=result.fun
-        
-        # best generalized lorenzian         
-        result = minimize(mse_loss, beta_init_lor, args=(x_data,y_data,gen_lor_amp), method='Nelder-Mead', tol=1e-12)        
-        beta_hat_gen_lor=result.x    
-        MSE_gen_lor=result.fun
-        
-        # best lorenzian 
-        beta_init_lor2=beta_init_lor[:3]
-        result = minimize(mse_loss, beta_init_lor2, args=(x_data,y_data,lor_amp), method='Nelder-Mead', tol=1e-12)        
-        beta_hat_lor=result.x    
-        MSE_lor=result.fun
-        
-        # best cosine window 
-        
-        beta_int_cos2=init_cos2(x_data,y_data)
-        result = minimize(mse_loss, beta_int_cos2, args=(x_data,y_data,cos_win2), method='Powell', tol=1e-12)        
-        beta_hat_cos2=result.x    
-        MSE_cos2=result.fun
-                
-        plt.plot(x_data,y_data,label='original data') 
-        plt.plot(x_data,cos_win2(x_data,beta_int_cos2),'--',label='cos in')  
-        plt.plot(x_data,cos_win2(x_data,beta_hat_cos2),'--',label='cos')  
-        
-        if plot_f:
-            plt.figure('peak number '+str(int(i))+' frequency')
-            plt.plot(x_data,y_data,label='original data') 
-            plt.plot(x_data[peaks[p]-l_win],y_data[peaks[p]-l_win],'*',label='peak')
-                        
-            plt.plot(x_data,gen_lor_amp(x_data,beta_hat_gen_lor),'-.',label='gen lor')
-            plt.plot(x_data,lor_amp(x_data,beta_hat_lor),'-*',label='lor')
-            plt.plot(x_data,cos_win2(x_data,beta_hat_cos2),'--',label='cos')  
-            plt.plot(x_data,gauss_amp(x_data,beta_hat_gauss),'-|',label='gauss')  
-            plt.legend()
-            plt.show()
-    
-                
-        # store everything
-        # function order is 
-        # gaus
-        # lor 
-        # gen_lor
-        # cos
-        
-        # store everything     
-        comp_range[i]=[l_win,r_win]    
-        comp_beta_gauss[i]=beta_hat_gauss
-        comp_beta_lor[i]=beta_hat_lor
-        comp_beta_gen_lor[i]=beta_hat_gen_lor
-        comp_beta_cos[i]=beta_hat_cos2
-        comp_MSE[i]=[MSE_gauss, MSE_lor, MSE_gen_lor, MSE_cos2]
-        comp_bias[i]=[bias_f]
-        
-        
-        # don't know what to subtract....
-        data_sparse_back[i+1]=data_sparse_back[i]
-        
+    bias_f = np.mean(np.sort(y_data)[:int(y_data.size/5)])
+    y_data = y_data -bias_f 
+
+    # you can use the same intialization for gaus, lor, gen_lor        
+    beta_init_lor=init_lor(x_data,y_data)
+
+
+    # best gaussian fit
+    result = minimize(mse_loss, beta_init_lor, args=(x_data,y_data,gauss_amp), method='Nelder-Mead', tol=1e-12)
+    beta_hat_gauss=result.x
+    MSE_gauss=result.fun
+
+    # best generalized lorenzian         
+    result = minimize(mse_loss, beta_init_lor, args=(x_data,y_data,gen_lor_amp), method='Nelder-Mead', tol=1e-12)
+    beta_hat_gen_lor=result.x
+    MSE_gen_lor=result.fun
+
+    # best lorenzian 
+    beta_init_lor2=beta_init_lor[:3]
+    result = minimize(mse_loss, beta_init_lor2, args=(x_data,y_data,lor_amp), method='Nelder-Mead', tol=1e-12)
+    beta_hat_lor=result.x
+    MSE_lor=result.fun
+
+    # best cosine window 
+
+    beta_int_cos2=init_cos2(x_data,y_data)
+    result = minimize(mse_loss, beta_int_cos2, args=(x_data,y_data,cos_win2), method='Powell', tol=1e-12)
+    beta_hat_cos2=result.x
+    MSE_cos2=result.fun
+
+    plt.plot(x_data,y_data,label='original data')
+    plt.plot(x_data,cos_win2(x_data,beta_int_cos2),'--',label='cos in')
+    plt.plot(x_data,cos_win2(x_data,beta_hat_cos2),'--',label='cos')  
+
+    if plot_f:
+        plt.figure(f'peak number {int(i)} frequency')
+        plt.plot(x_data,y_data,label='original data')
+        plt.plot(x_data[peaks[p]-l_win],y_data[peaks[p]-l_win],'*',label='peak')
+
+        plt.plot(x_data,gen_lor_amp(x_data,beta_hat_gen_lor),'-.',label='gen lor')
+        plt.plot(x_data,lor_amp(x_data,beta_hat_lor),'-*',label='lor')
+        plt.plot(x_data,cos_win2(x_data,beta_hat_cos2),'--',label='cos')
+        plt.plot(x_data,gauss_amp(x_data,beta_hat_gauss),'-|',label='gauss')
+        plt.legend()
+        plt.show()
+
+
+    # store everything
+    # function order is 
+    # gaus
+    # lor 
+    # gen_lor
+    # cos
+
+    # store everything     
+    comp_range[i]=[l_win,r_win]
+    comp_beta_gauss[i]=beta_hat_gauss
+    comp_beta_lor[i]=beta_hat_lor
+    comp_beta_gen_lor[i]=beta_hat_gen_lor
+    comp_beta_cos[i]=beta_hat_cos2
+    comp_MSE[i]=[MSE_gauss, MSE_lor, MSE_gen_lor, MSE_cos2]
+    comp_bias[i]=[bias_f]
+
+
+    # don't know what to subtract....
+    data_sparse_back[i+1]=data_sparse_back[i]
+
 
 #----------------------------------------------------------------------------
 #recap plot after the fitting
@@ -635,18 +589,18 @@ data_hat=np.zeros(res)
 count=np.zeros(4)
 
 for i in range(int(rough_peak_positions.size)):
-    
+
     min_MSE_pos=int(min(comp_MSE[i,:]))
     l_win=int(comp_range[i,0])
     r_win=int(comp_range[i,1])
     x_data = f_sup[l_win:r_win]
-    
+
     # gaus
     # lor 
     # gen_lor
     # cos
     count[min_MSE_pos]=count[min_MSE_pos]+1
-    
+
     if    min_MSE_pos==0:     
         data_hat[l_win:r_win]=comp_bias[i]+gauss_amp(x_data,comp_beta_gauss[i])           
     elif  min_MSE_pos==1:
@@ -655,10 +609,10 @@ for i in range(int(rough_peak_positions.size)):
         data_hat[l_win:r_win]=comp_bias[i]+gen_lor_amp(x_data,comp_beta_gen_lor[i])           
     else:
         data_hat[l_win:r_win]=comp_bias[i]+cos_win2(x_data,comp_beta_cos[i])           
-    
-    
 
-            
+
+
+
 recap_peak_fit=1
 
 if recap_peak_fit:

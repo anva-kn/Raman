@@ -138,18 +138,13 @@ quick_NMF(data1p5.reshape(res,dim_s),3)
 
 INF=10**4
 
-def one_side_MSE (y_pred,y_true):        
-    if  y_pred-y_true>0:
-        loss=INF*(y_pred-y_true)**2
-    else:
-        loss=(y_pred-y_true)**2            
-    return(loss)
+def one_side_MSE(y_pred,y_true):        
+    return INF*(y_pred-y_true)**2 if y_pred-y_true>0 else (y_pred-y_true)**2
 
 
 def obj_one_side_MSE(beta, X, Y):
     p=np.poly1d(beta)
-    error = sum([one_side_MSE(p(X[i]), Y[i]) for i in range(X.size)])/X.size
-    return(error)
+    return sum(one_side_MSE(p(X[i]), Y[i]) for i in range(X.size)) / X.size
 
 def quick_remove_bias(data):    
     # find the minimum over the spacial dimension
@@ -220,12 +215,12 @@ beta_init[3]=beta_init[3]+min(min_spec-poly_min)
 
 result = minimize(obj_one_side_MSE, beta_init, args=(f_vec,data_o), method='Nelder-Mead', tol=1e-9)   
 
-beta_hat = result.x                 
+beta_hat = result.x
 beta_hat -beta_init
 poly_min_hat=np.poly1d(beta_hat)(f_vec)
-    
+
 poly_min_hat=poly_min_hat+min(data_o-poly_min_hat)
-    
+
 data_o_nb=data_o-poly_min_hat
 
 plt.plot(f_vec,data_o)
@@ -237,7 +232,7 @@ mean = np.mean(data_o_nb)
 data_o_nb-= np.mean(data_o_nb)
 autocorr_f = np.correlate(data_o_nb, data_o_nb, mode='full')
 mid=int(np.where(autocorr_f==max(autocorr_f ))[0])
-temp = autocorr_f[mid:]/autocorr_f[mid]    
+temp = autocorr_f[mid:]/autocorr_f[mid]
 win_t=np.where(temp>0.9)[0][-1]
 
 from lmfit.models import LorentzianModel, QuadraticModel
@@ -258,7 +253,7 @@ peaks, properties = sci.find_peaks(data_temp_mean,width=win_t)
 
 idx=np.flip(np.argsort(data_temp[peaks],kind='quicksort'))
 #idx=peaks[idx[0:7]]
-idx=peaks[idx[0:15]]
+idx = peaks[idx[:15]]
 
 plt.plot(f_vec[peaks],data_temp[peaks],'*')
 plt.plot(f_vec[idx], data_temp[idx],'.')
@@ -270,9 +265,9 @@ rough_peak_positions = f_vec[idx]
 def add_peak(prefix, center, amplitude=0.1, sigma=0.1):
     peak = LorentzianModel(prefix=prefix)
     pars = peak.make_params()
-    pars[prefix + 'center'].set(center)
-    pars[prefix + 'amplitude'].set(amplitude)
-    pars[prefix + 'sigma'].set(sigma, min=0)
+    pars[f'{prefix}center'].set(center)
+    pars[f'{prefix}amplitude'].set(amplitude)
+    pars[f'{prefix}sigma'].set(sigma, min=0)
     return peak, pars
 
 model = QuadraticModel(prefix='bkg_')
@@ -282,7 +277,7 @@ for i, cen in enumerate(rough_peak_positions):
     peak, pars = add_peak('lz%d_' % (i+1), cen)
     model = model + peak
     params.update(pars)
-    
+
 init = model.eval(params, x=f_vec)
 result = model.fit(data_temp, params, x=f_vec)
 comps = result.eval_components()
@@ -297,29 +292,12 @@ for name, comp in comps.items():
 plt.legend(loc='upper right')
 plt.show()
 
-##############################################################################
-############################################################################################################################################################
-##############################################################################
-##############################################################################
-##############################################################################
-
-
-
-
-
-
-
-
-
-
-
-    # window is when we go below 0.9
 win_t=np.where(temp>0.9)[0][-1]
-     
+
 min_mean=smooth_data(min_spec,win_t)
-    
+
 peaks, properties = sci.find_peaks(min_mean,width=2*win_t)
-        
+
 #peaks = sci.find_peaks_cwt(min_mean, np.arange(1,10))
 
 plt.plot(min_mean)
@@ -327,26 +305,6 @@ plt.plot(peaks,min_mean[peaks],'o')
 
 # find when we are under 0.5 correlation   
 win_t=np.where(temp>0.5)[0][-1]
-
- #------------------------------------------------------------------------------
-
-
-# pp=np.correlate(min_spec-np.mean(min_spec),min_spec-np.mean(min_spec), mode='same')/(np.var(min_spec))
-# %pp=pp[int(min_spec.size/2)]
-
-   
-   # plt.plot(pp)
-
-
-   # min_corr=np.correlate(min_spec)
-   # # set the window to the point at which the correlation fall under 0.5
-   # avg_corr= diag(min_corr,k)
-   # M=[np.mean(diag(min_corr,i)) for i in  range(min_spec.size)]
-   
-   # peaks, properties = sci.find_peaks(data_min_s,prominence=5,width=5)
-
-
-   # return bias_spect
 
 data=data15
 
@@ -370,40 +328,40 @@ min_wo_peaks=data_min_s.copy()
 
 for p in range(peaks.shape[0]):
     # find the alpha & beta coefficient between the edges
-        
+
     l_pos = int(np.floor(properties["left_ips"][p]))
     r_pos = int(np.ceil(properties["right_ips"][p]))
-    
+
     plt.plot(l_pos,min_wo_peaks[l_pos],'*')
     plt.plot(r_pos,min_wo_peaks[r_pos],'o')
-    
+
     win = range(l_pos,r_pos)
     win_len=r_pos-l_pos
-    
-    
+
+
     #l_max=l_pos-1000*win_len
     #r_max=r_pos+1000*win_len
-    
+
     #min_win=min(min_wo_peaks[win]).copy()
     # extend the window to make sure that the spectrum is decreasing arond the window
-    
-    
+
+
     # while  (min_wo_peaks[l_pos-1]>=min_win) and (l_pos>l_max):
     #     l_pos=l_pos-1
-    
+
     # while  (min_wo_peaks[r_pos+1]>=min_win) and (r_pos<r_max):
     #     r_pos=r_pos+1
-    
-    
-    while  (min_wo_peaks[l_pos-1]<=min_wo_peaks[l_pos]):
-        l_pos=l_pos-1
-    
-    while  (min_wo_peaks[r_pos+1]<=min_wo_peaks[r_pos]):
-        r_pos=r_pos+1
-    
+
+
+    while (min_wo_peaks[l_pos-1]<=min_wo_peaks[l_pos]):
+        l_pos -= 1
+
+    while (min_wo_peaks[r_pos+1]<=min_wo_peaks[r_pos]):
+        r_pos += 1
+
     min_wo_peaks[l_pos:r_pos]=np.min([min_wo_peaks[l_pos],min_wo_peaks[r_pos]])
-    
-    
+
+
 poly_min=np.poly1d(np.polyfit(f_vec,min_wo_peaks,3))(f_vec)
 
 poly_min_pos=poly_min+min(min_wo_peaks-poly_min)
@@ -418,18 +376,13 @@ poly_min_pos=poly_min+min(min_wo_peaks-poly_min)
 
 INF=10**4
 
-def loss_function (y_pred,y_true):        
-    if  y_pred-y_true>0:
-        loss=INF*(y_pred-y_true)**2
-    else:
-        loss=(y_pred-y_true)**2            
-    return(loss)
+def loss_function(y_pred,y_true):        
+    return INF*(y_pred-y_true)**2 if y_pred-y_true>0 else (y_pred-y_true)**2
 
 
 def objective_function(beta, X, Y):
     p=np.poly1d(beta)
-    error = sum([loss_function(p(X[i]), Y[i]) for i in range(X.size)])/X.size
-    return(error)
+    return sum(loss_function(p(X[i]), Y[i]) for i in range(X.size)) / X.size
 
 #
 # p=np.poly1d(beta_init)
@@ -565,9 +518,9 @@ plt.plot(f_vec,data_temp,'--')
 def add_peak(prefix, center, amplitude=1, sigma=1):
     peak = LorentzianModel(prefix=prefix)
     pars = peak.make_params()
-    pars[prefix + 'center'].set(center)
-    pars[prefix + 'amplitude'].set(amplitude)
-    pars[prefix + 'sigma'].set(sigma, min=0)
+    pars[f'{prefix}center'].set(center)
+    pars[f'{prefix}amplitude'].set(amplitude)
+    pars[f'{prefix}sigma'].set(sigma, min=0)
     return peak, pars
 
 model = QuadraticModel(prefix='bkg_')
@@ -642,9 +595,9 @@ rough_peak_positions = f_vec[idx]
 def add_peak(prefix, center, amplitude=5, sigma=5):
     peak = LorentzianModel(prefix=prefix)
     pars = peak.make_params()
-    pars[prefix + 'center'].set(center)
-    pars[prefix + 'amplitude'].set(amplitude)
-    pars[prefix + 'sigma'].set(sigma, min=0)
+    pars[f'{prefix}center'].set(center)
+    pars[f'{prefix}amplitude'].set(amplitude)
+    pars[f'{prefix}sigma'].set(sigma, min=0)
     return peak, pars
 
 model = QuadraticModel(prefix='bkg_')

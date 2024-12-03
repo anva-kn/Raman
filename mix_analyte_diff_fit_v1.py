@@ -136,9 +136,7 @@ for index, (value, value_error, value_error_abs) in enumerate(zip(data_mean_ace_
 peaks_list = []
 for index, peak in enumerate(islice(temp_list, len(temp_list) - 1)):
     if (peak.index_pos - temp_list[index + 1].index_pos) == -1 and peak.value > temp_list[index + 1].value:
-        if peak.value < temp_list[index - 1].value:
-            pass
-        else:
+        if peak.value >= temp_list[index - 1].value:
             peaks_list.append(peak)
 #<-------------------------------------------------------------------------------------
 
@@ -160,9 +158,7 @@ for index, (value, value_error, value_error_abs) in enumerate(zip(data_mean_ace,
 peaks_list_1 = []
 for index, peak in enumerate(islice(temp_list, len(temp_list) - 1)):
     if (peak.index_pos - temp_list[index + 1].index_pos) == -1 and peak.value > temp_list[index + 1].value:
-        if peak.value < temp_list[index - 1].value:
-            pass
-        else:
+        if peak.value >= temp_list[index - 1].value:
             peaks_list_1.append(peak)
 #<-------------------------------------------------------------------------------------
 
@@ -185,9 +181,7 @@ for index, (value, value_error, value_error_abs) in enumerate(zip(data_mean_mg, 
 peaks_list_2 = []
 for index, peak in enumerate(islice(temp_list, len(temp_list) - 1)):
     if (peak.index_pos - temp_list[index + 1].index_pos) == -1 and peak.value > temp_list[index + 1].value:
-        if peak.value < temp_list[index - 1].value:
-            pass
-        else:
+        if peak.value >= temp_list[index - 1].value:
             peaks_list_2.append(peak)
 #<-------------------------------------------------------------------------------------
 

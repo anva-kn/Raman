@@ -72,13 +72,13 @@ s1=f_sup.copy()
 
 while i<len_temp-1:        
     pos=np.where((f_ACE>=f_sup[i]) & (f_ACE<=f_sup[i+1]))
-    
+
     # 
     data_ace_temp[i] =np.mean(dataACE[pos])
-    
+
     # update counter
-    i=i+1
-    
+    i += 1
+
 # last point just guess
 data_ace_temp[i]=dataACE[align_end]
 
@@ -118,7 +118,7 @@ num_peaks=5
 
 data_mean=np.mean(data,axis=2)
 data_mean[0]=data_ace_temp
- 
+
 # model MG
 data_MG_sparse=remove_est_florescence(f_sup,data[1])
 
@@ -165,10 +165,10 @@ recap_spectrum(f_sup,data_ACE_mean,num_peaks, comp_rangeA, comp_beta_gaussA, com
 #------------------------------------------------------------------------------
 # store per peak correlation
 
-mean_m11=np.zeros(int(num_peaks))
-mean_m12=np.zeros(int(num_peaks))
-mean_m21=np.zeros(int(num_peaks))
-mean_m22=np.zeros(int(num_peaks))
+mean_m11 = np.zeros(num_peaks)
+mean_m12 = np.zeros(num_peaks)
+mean_m21 = np.zeros(num_peaks)
+mean_m22 = np.zeros(num_peaks)
 
 # start with data 15
 data11=data_pre_process(f_sup,data[2])
@@ -198,7 +198,7 @@ if plot_cor_space:
     plt.figure('Total correlation in space for MG')
     plt.plot(corr_11MG.reshape(dim_s),'*-',label='11-MG')
     plt.plot(corr_12MG.reshape(dim_s),'.-',label='12-MG')
-    
+
     plt.plot(corr_21MG.reshape(dim_s),'|-',label='21-MG')
     plt.plot(corr_22MG.reshape(dim_s),'+-',label='22-MG')
 
@@ -206,10 +206,10 @@ if plot_cor_space:
     plt.show()
 
     plt.figure('Total correlation in space for A')
-    
+
     plt.plot(corr_11A.reshape(dim_s),'*-',label='11-A')
     plt.plot(corr_12A.reshape(dim_s),'.-',label='12-A')
-    
+
     plt.plot(corr_21A.reshape(dim_s),'|-',label='21-A')
     plt.plot(corr_22A.reshape(dim_s),'+-',label='22-A')
 
@@ -232,10 +232,10 @@ plot_time_corr=1
 if plot_time_corr:
     plt.plot(time_corr_MG,'o-',label='MG')
     plt.plot(time_corr_A,'+-',label='A')
-    
+
     plt.legend()
     plt.show()
-    
+
 
 # average correlation PER PEAK
 mean_corr11M=np.zeros(num_peaks)
@@ -251,51 +251,51 @@ mean_corr22A=np.zeros(num_peaks)
 
 
 for i in range(num_peaks):
-               
+
     l_win=int(comp_rangeM[i,0])
     r_win=int(comp_rangeM[i,1])
     x_data = f_sup[l_win:r_win]
-    
+
     #np.dot(data_hat,data1p5p.reshape(res,dim_s)).reshape(10,10)
-     
+
     mean_corr11M[i]=np.mean(np.dot(dataM_hat[l_win:r_win],data11[l_win:r_win].reshape([r_win-l_win,dim_s])))
     mean_corr12M[i]=np.mean(np.dot(dataM_hat[l_win:r_win],data12[l_win:r_win].reshape([r_win-l_win,dim_s])))
     mean_corr21M[i]=np.mean(np.dot(dataM_hat[l_win:r_win],data21[l_win:r_win].reshape([r_win-l_win,dim_s])))
     mean_corr22M[i]=np.mean(np.dot(dataM_hat[l_win:r_win],data22[l_win:r_win].reshape([r_win-l_win,dim_s])))
-    
+
     # gaus
     # lor 
     # gen_lor
     # cos
-    
+
 
 for i in range(num_peaks):
-               
+
     l_win=int(comp_rangeA[i,0])
     r_win=int(comp_rangeA[i,1])
     x_data = f_sup[l_win:r_win]
-    
+
     #np.dot(data_hat,data1p5p.reshape(res,dim_s)).reshape(10,10)
-     
+
     mean_corr11A[i]=np.mean(np.dot(dataA_hat[l_win:r_win],data11[l_win:r_win].reshape([r_win-l_win,dim_s])))
     mean_corr12A[i]=np.mean(np.dot(dataA_hat[l_win:r_win],data12[l_win:r_win].reshape([r_win-l_win,dim_s])))
     mean_corr21A[i]=np.mean(np.dot(dataA_hat[l_win:r_win],data21[l_win:r_win].reshape([r_win-l_win,dim_s])))
     mean_corr22A[i]=np.mean(np.dot(dataA_hat[l_win:r_win],data22[l_win:r_win].reshape([r_win-l_win,dim_s])))
-    
+
 corr_peak=1
 if corr_peak:
-    
+
     plt.plot(mean_corr11M,'*-',label='M-11')
     plt.plot(mean_corr12M,'.-',label='M-12')
     plt.plot(mean_corr21M,'|-',label='M-21')
     plt.plot(mean_corr22M,'+-',label='M-22')
-    
+
     plt.plot(mean_corr11A,'*-',label='A-11')
     plt.plot(mean_corr12A,'.-',label='A-12')
     plt.plot(mean_corr21A,'|-',label='A-21')
     plt.plot(mean_corr22A,'+-',label='A-22')
-    
-        
+
+
     plt.legend()
     plt.show()
     

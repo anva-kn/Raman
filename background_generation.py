@@ -40,7 +40,7 @@ f_sup_mix.shape
 #%%
 whole_data_pure = np.zeros((30000, 1600))
 # print(whole_data.shape)
-whole_data_pure[0:2500] = np.copy(data_15000[0])
+whole_data_pure[:2500] = np.copy(data_15000[0])
 whole_data_pure[2500:5000] = np.copy(data_15000[1])
 whole_data_pure[5000:7500] = np.copy(data_15000[2])
 whole_data_pure[7500:10000] = np.copy(data_15000[3])

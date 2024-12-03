@@ -137,18 +137,13 @@ quick_NMF(data1p5.reshape(res,dim_s),3)
 
 INF=10**4
 
-def one_side_MSE (y_pred,y_true):        
-    if  y_pred-y_true>0:
-        loss=INF*(y_pred-y_true)**2
-    else:
-        loss=(y_pred-y_true)**2            
-    return(loss)
+def one_side_MSE(y_pred,y_true):        
+    return INF*(y_pred-y_true)**2 if y_pred-y_true>0 else (y_pred-y_true)**2
 
 
 def obj_one_side_MSE(beta, X, Y):
     p=np.poly1d(beta)
-    error = sum([one_side_MSE(p(X[i]), Y[i]) for i in range(X.size)])/X.size
-    return(error)
+    return sum(one_side_MSE(p(X[i]), Y[i]) for i in range(X.size)) / X.size
 
 def quick_remove_bias(data):    
     # find the minimum over the spacial dimension
@@ -219,12 +214,12 @@ beta_init[3]=beta_init[3]+min(min_spec-poly_min)
 
 result = minimize(obj_one_side_MSE, beta_init, args=(f_vec,data_o), method='Nelder-Mead', tol=1e-9)   
 
-beta_hat = result.x                 
+beta_hat = result.x
 beta_hat -beta_init
 poly_min_hat=np.poly1d(beta_hat)(f_vec)
-    
+
 poly_min_hat=poly_min_hat+min(data_o-poly_min_hat)
-    
+
 data_o_nb=data_o-poly_min_hat
 
 plt.plot(f_vec,data_o)
@@ -236,7 +231,7 @@ mean = np.mean(data_o_nb)
 data_o_nb-= np.mean(data_o_nb)
 autocorr_f = np.correlate(data_o_nb, data_o_nb, mode='full')
 mid=int(np.where(autocorr_f==max(autocorr_f ))[0])
-temp = autocorr_f[mid:]/autocorr_f[mid]    
+temp = autocorr_f[mid:]/autocorr_f[mid]
 win_t=np.where(temp>0.9)[0][-1]
 
 from lmfit.models import LorentzianModel, QuadraticModel
@@ -257,7 +252,7 @@ peaks, properties = sci.find_peaks(data_temp_mean,width=win_t)
 
 idx=np.flip(np.argsort(data_temp[peaks],kind='quicksort'))
 #idx=peaks[idx[0:7]]
-idx=peaks[idx[0:15]]
+idx = peaks[idx[:15]]
 
 plt.plot(f_vec[peaks],data_temp[peaks],'*')
 plt.plot(f_vec[idx], data_temp[idx],'.')
@@ -269,9 +264,9 @@ rough_peak_positions = f_vec[idx]
 def add_peak(prefix, center, amplitude=0.1, sigma=0.1):
     peak = LorentzianModel(prefix=prefix)
     pars = peak.make_params()
-    pars[prefix + 'center'].set(center)
-    pars[prefix + 'amplitude'].set(amplitude)
-    pars[prefix + 'sigma'].set(sigma, min=0)
+    pars[f'{prefix}center'].set(center)
+    pars[f'{prefix}amplitude'].set(amplitude)
+    pars[f'{prefix}sigma'].set(sigma, min=0)
     return peak, pars
 
 model = QuadraticModel(prefix='bkg_')
@@ -418,18 +413,13 @@ peak_fig=1
 
 INF=10**4
 
-def loss_function (y_pred,y_true):        
-    if  y_pred-y_true>0:
-        loss=INF*(y_pred-y_true)**2
-    else:
-        loss=(y_pred-y_true)**2            
-    return(loss)
+def loss_function(y_pred,y_true):        
+    return INF*(y_pred-y_true)**2 if y_pred-y_true>0 else (y_pred-y_true)**2
 
 
 def objective_function(beta, X, Y):
     p=np.poly1d(beta)
-    error = sum([loss_function(p(X[i]), Y[i]) for i in range(X.size)])/X.size
-    return(error)
+    return sum(loss_function(p(X[i]), Y[i]) for i in range(X.size)) / X.size
 
 #
 # p=np.poly1d(beta_init)
@@ -564,9 +554,9 @@ plt.plot(f_vec,data_temp,'--')
 def add_peak(prefix, center, amplitude=1, sigma=1):
     peak = LorentzianModel(prefix=prefix)
     pars = peak.make_params()
-    pars[prefix + 'center'].set(center)
-    pars[prefix + 'amplitude'].set(amplitude)
-    pars[prefix + 'sigma'].set(sigma, min=0)
+    pars[f'{prefix}center'].set(center)
+    pars[f'{prefix}amplitude'].set(amplitude)
+    pars[f'{prefix}sigma'].set(sigma, min=0)
     return peak, pars
 
 model = QuadraticModel(prefix='bkg_')
@@ -641,9 +631,9 @@ rough_peak_positions = f_vec[idx]
 def add_peak(prefix, center, amplitude=5, sigma=5):
     peak = LorentzianModel(prefix=prefix)
     pars = peak.make_params()
-    pars[prefix + 'center'].set(center)
-    pars[prefix + 'amplitude'].set(amplitude)
-    pars[prefix + 'sigma'].set(sigma, min=0)
+    pars[f'{prefix}center'].set(center)
+    pars[f'{prefix}amplitude'].set(amplitude)
+    pars[f'{prefix}sigma'].set(sigma, min=0)
     return peak, pars
 
 model = QuadraticModel(prefix='bkg_')

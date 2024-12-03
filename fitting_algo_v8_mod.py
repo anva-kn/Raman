@@ -111,14 +111,13 @@ def find_peak_sym_supp(peak,l_pos,r_pos, win_len_mul, smooth_win, tol, Y):
 def cos_window(t,M,o,d,al,be):
     
     if o<=t & t<o+al:
-        out=M/2*(1-np.cos(2*pi*(t-o)/(2*al)))
+        return M/2*(1-np.cos(2*pi*(t-o)/(2*al)))
     elif o+al<=t & t<o+al+d: 
-        out=M
+        return M
     elif o+al+d<= t & t<o+al+d+be:
-        out=M/2*(1-np.cos(2*pi*(be-(t-d-o-al))/(2*be)))
+        return M/2*(1-np.cos(2*pi*(be-(t-d-o-al))/(2*be)))
     else:
-        out=0
-    return  out
+        return 0
 
 def cos_win(x_data,beta):    
     M=beta[0]
@@ -126,9 +125,8 @@ def cos_win(x_data,beta):
     d=beta[2]
     al=beta[3]
     be=beta[4]
-    
-    yvec=[cos_window(t,M,o,d,al,be)  for t in range(x_data.size)]
-    return yvec
+
+    return [cos_window(t,M,o,d,al,be)  for t in range(x_data.size)]
 
 # init functions
 
@@ -155,28 +153,26 @@ def init_cos(x_data,y_data,win):
     # order of arguments: M,o,d,al,be
     y_smoth=smooth_data(y_data,win)
     power=np.dot(y_data,y_data.T)/dim_amm
-        
+
     floor_th=0.1*np.sqrt(power)
     # how to define the ceiling of the function
     ceil_th=0.9*np.sqrt(power)    
-    
+
     #  while extending 0 l_win_low /  win_up / l_win_high-r_win_high / win_down / r_win_low-dim_amm
-    
-    l_win_low  = np.argmax(floor_th<y_smoth) 
+
+    l_win_low  = np.argmax(floor_th<y_smoth)
     r_win_low =dim_amm- np.argmax(floor_th<np.flip(y_smoth) )
-    
-    l_win_high =  np.argmax(ceil_th<y_smoth) 
+
+    l_win_high =  np.argmax(ceil_th<y_smoth)
     r_win_high =dim_amm- np.argmax(ceil_th<np.flip(y_smoth) )    
-    
-    # M_init =ceil_th
-    # o_init = l_win_low  
-    # d_init = r_win_high -l_win_high 
-    # al_init= l_win_high-l_win_low  
-    # be_init= r_win_low- r_win_high
-    
-    beta_cos_int=[ceil_th, l_win_low, r_win_high -l_win_high, l_win_high-l_win_low, r_win_low- r_win_high]
-    
-    return beta_cos_int
+
+    return [
+        ceil_th,
+        l_win_low,
+        r_win_high - l_win_high,
+        l_win_high - l_win_low,
+        r_win_low - r_win_high,
+    ]
 
 def is_solvent(y_data):
     # check the time we are under the mean minus the standard deviation
@@ -204,13 +200,6 @@ specMean=np.mean(data_sparse)
 data_sparse=data_sparse/specMean
 data_mean_sparse=np.mean(data_sparse,axis=0)
 
-# algorthim: 
-    # find peaks
-    # expand symmetrically
-    # fint gen_lorenz
-    # remove data
-    # repeat!
-    
 # FIND THE PEAKS 
 
 peaks, properties = sci.find_peaks(smooth_data(data_sparse,2),prominence=0.05,width=1) 
@@ -237,7 +226,7 @@ rough_peak_positions = idx
 
 # variables we store
 #------------------------------------------------------------------------------
-    
+
 # backup of the data
 data_sparse_back=np.zeros([rough_peak_positions.size+1,data_sparse.shape[0],data_sparse.shape[1]])
 # inital boundaries and boudaries after expansion
@@ -252,47 +241,43 @@ comp_bias=np.zeros([rough_peak_positions.size,2])
 comp_up_down=np.zeros([rough_peak_positions.size])
 # start with the original data
 data_sparse_back[0,:,:]=data_sparse
-    
+
 # MAIN LOOP OVER THE PEAKS
 #------------------------------------------------------------------------------
-    
+
 plot_f=0
 plot_t=1
-
-# for i in range(int(rough_peak_positions.size)):
-#for  i in range(5):        
- #   for  i in range(int(rough_peak_positions.size)):
 
 for i in range(5):    
     print('Step: ',i,' -peak position: ',rough_peak_positions[i])
 
     p=peaks[i]
-    
+
     l_ips=int(np.floor(properties["left_ips"][p]))
     r_ips=int(np.ceil(properties["right_ips"][p]))
-    
+
     # rough_peak_positions[i] is in position idx_peaks[i]        
     # tolerance is 10%
     #                find_peak_sym_supp(peak,    l_pos,r_pos, win_len_mul, smooth_win, tol, Y):
     [l_win, r_win] = find_peak_sym_supp(peaks[p],l_ips,r_ips, 5, 5,0.0, data_sparse)
-           
+
     x_data = f_vec[l_win:r_win]
     y_data = np.mean(data_sparse_back[i,l_win:r_win,:],axis=1)
-    
+
     # this is my guess for a good strategy
     bias_f = min(y_data)/2
     # random choice of bias
     #bias_f = np.mean(np.sort(y_data)[0:int(y_data.size/25)])
     y_data = y_data -bias_f 
-    
+
     beta_init_lor=init_lor(x_data,y_data)
-           
+
     #result = minimize(pos_mse_loss, beta_init_lor, args=(x_data,y_data,gen_lor_amp), method='Nelder-Mead', tol=1e-8)
     result = minimize(mse_loss, beta_init_lor, args=(x_data,y_data,gen_lor_amp), method='Nelder-Mead', tol=1e-12)
     beta_hat_lor=result.x    
-    
+
     if plot_f:
-        plt.figure('peak number '+str(int(i))+' frequency')
+        plt.figure(f'peak number {int(i)} frequency')
         plt.plot(x_data,y_data)
         plt.plot(x_data,gen_lor_amp(x_data,beta_init_lor),'--')
         plt.plot(x_data,gen_lor_amp(x_data,beta_hat_lor),'-*')
@@ -303,9 +288,9 @@ for i in range(5):
 
     # #------------------------------------------------------------------------------
     # # is this a water peak? check the mean!
-    
+
     # solve=is_solvent(y_data)       
-    
+
     # if  solve:
     #     bias_t=np.mean(np.sort(y_data)[::-int(y_data.size/50)])
     #     #bias_t=np.max(y_data)
@@ -316,22 +301,22 @@ for i in range(5):
     #     bias_t=np.mean(np.sort(y_data)[::int(y_data.size/50)])
     #     y_data=y_data-bias_t
     #     y_data=y_data-np.min(y_data)    
-    
+
     # bounds_cos=np.array([np.zeros(5) , np.inf*np.ones(5)]).T    
     # bounds_cos=tuple(map(tuple, bounds))
-    
+
     # beta_init_cos=np.array(init_cos(x_data,y_data,5))
     # #result = minimize(pos_mse_loss, beta_init_cos, args=(x_data,y_data,cos_win), tol=1e-8,bounds=bounds_cos)    
     # result = minimize(mse_loss, beta_init_cos, args=(x_data,y_data,cos_win), tol=1e-12,bounds=bounds_cos)    
-    
+
     # beta_hat_cos=result.x
-        
+
     # if plot_t:
     #     plt.figure('peak number '+str(int(i))+' time')
     #     plt.plot(x_data,(1-2*solve)*y_data)            
     #     #plt.plot(x_data,(1-2*solve)*np.array(cos_win(x_data,beta_init_cos)),'--')        
     #     plt.plot(x_data,(1-2*solve)*np.array(cos_win(x_data,beta_hat_cos)),'-*')        
-    
+
     # # refit the lorenzian in the smaller interval        
     # # use the previous estiamate to start
     # y_data=np.mean(data_sparse_back[i,l_win:r_win,int(beta_hat_cos[1]):int(sum(beta_hat_cos[2:5]))],axis=1)        
@@ -340,7 +325,7 @@ for i in range(5):
     # #bias_f2 = np.mean(np.sort(y_data)[0:max(int(y_data.size/25)])
     # y_data = y_data -bias_f2 
     # y_data=y_data-np.min(y_data)    
-    
+
     # beta_init_lor2=init_lor(x_data,y_data)
     # #result = minimize(pos_mse_loss, beta_init_lor, args=(x_data,y_data,gen_lor_amp), method='Nelder-Mead', tol=1e-8)        
     # #result = minimize(mse_loss, beta_init_lor, args=(x_data,y_data,gen_lor_amp), method='Nelder-Mead', tol=1e-8)
@@ -352,9 +337,9 @@ for i in range(5):
     #     plt.plot(x_data,y_data)    
     #     #plt.plot(x_data,gen_lor_amp(x_data,beta_hat_lor),'--')
     #     plt.plot(x_data,gen_lor_amp(x_data,beta_hat_lor2),'-*')
-    
+
     # store everything     
-    comp_range[i]=[l_win,r_win,l_ips,r_ips]    
+    comp_range[i]=[l_win,r_win,l_ips,r_ips]
     comp_beta_lor[i]=beta_hat_lor2
     # comp_beta_cos[i]=beta_hat_cos
     comp_bias[i]=[bias_f2]#, bias_t]
